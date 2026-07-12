@@ -1,0 +1,63 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidBooking(data) {
+      return data.keys().hasOnly([
+               'name',
+               'phone',
+               'aadhaar',
+               'checkIn',
+               'checkOut',
+               'guests',
+               'totalAmount',
+               'advancePaid'
+             ]) &&
+          data.name is string && data.name.size() >= 3 && data.name.size() <= 80 &&
+          data.phone is string && data.phone.matches('^[0-9]{10}$') &&
+          data.aadhaar is string && data.aadhaar.matches('^[0-9]{12}$') &&
+          data.checkIn is timestamp &&
+          data.checkOut is timestamp &&
+          data.checkOut > data.checkIn &&
+          data.guests is int && data.guests >= 1 && data.guests <= 50 &&
+          data.totalAmount is number && data.totalAmount > 0 &&
+          data.advancePaid is number &&
+          data.advancePaid >= 0 &&
+          data.advancePaid <= data.totalAmount;
+    }
+
+    function isValidExpense(data) {
+      return data.keys().hasOnly([
+               'title',
+               'amount',
+               'description',
+               'date'
+             ]) &&
+          data.title is string && data.title.size() >= 3 && data.title.size() <= 80 &&
+          data.amount is number && data.amount > 0 &&
+          data.description is string && data.description.size() >= 5 && data.description.size() <= 500 &&
+          data.date is timestamp;
+    }
+
+    // User bookings
+    match /users/{userId}/bookings/{bookingId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow create, update: if isSignedIn() && request.auth.uid == userId && isValidBooking(request.resource.data);
+      allow delete: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // User expenses
+    match /users/{userId}/expenses/{expenseId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow create, update: if isSignedIn() && request.auth.uid == userId && isValidExpense(request.resource.data);
+      allow delete: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

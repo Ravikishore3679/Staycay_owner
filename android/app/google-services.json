@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "216680883540",
+    "project_id": "staycay-owner",
+    "storage_bucket": "staycay-owner.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:216680883540:android:691d8949948b9e157a54c1",
+        "android_client_info": {
+          "package_name": "com.example.heavenrock_registry"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "216680883540-ntckshd0lo3gg19udfg24el0n32c4nh0.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.heavenrock_registry",
+            "certificate_hash": "33dcddcf362ef9ab01235d6f883738f7919b9cc7"
+          }
+        },
+        {
+          "client_id": "216680883540-apdshmsar7hhhvo9tfhjvr66a4hdokb9.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDES8dMXJFQxWKZkT7ZyyWdTBrLrErvNW4"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "216680883540-apdshmsar7hhhvo9tfhjvr66a4hdokb9.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "216680883540-vb90l5aekf9urfnoj6hh42bbuugnes4f.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.heavenrockRegistry"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

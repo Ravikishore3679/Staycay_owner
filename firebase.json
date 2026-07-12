@@ -1,0 +1,45 @@
+{
+	"firestore": {
+		"rules": "firestore.rules",
+		"indexes": "firestore.indexes.json"
+	},
+	"flutter": {
+		"platforms": {
+			"android": {
+				"default": {
+					"projectId": "staycay-owner",
+					"appId": "1:216680883540:android:691d8949948b9e157a54c1",
+					"fileOutput": "android/app/google-services.json"
+				}
+			},
+			"ios": {
+				"default": {
+					"projectId": "staycay-owner",
+					"appId": "1:216680883540:ios:04b11e8fd91452177a54c1",
+					"uploadDebugSymbols": false,
+					"fileOutput": "ios/Runner/GoogleService-Info.plist"
+				}
+			},
+			"macos": {
+				"default": {
+					"projectId": "staycay-owner",
+					"appId": "1:216680883540:ios:04b11e8fd91452177a54c1",
+					"uploadDebugSymbols": false,
+					"fileOutput": "macos/Runner/GoogleService-Info.plist"
+				}
+			},
+			"dart": {
+				"lib/firebase_options.dart": {
+					"projectId": "staycay-owner",
+					"configurations": {
+						"android": "1:216680883540:android:691d8949948b9e157a54c1",
+						"ios": "1:216680883540:ios:04b11e8fd91452177a54c1",
+						"macos": "1:216680883540:ios:04b11e8fd91452177a54c1",
+						"web": "1:216680883540:web:40680f296ab492f17a54c1",
+						"windows": "1:216680883540:web:3681d1a6c7974ce37a54c1"
+					}
+				}
+			}
+		}
+	}
+}
