@@ -8,7 +8,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:firebase_core_platform_interface/test.dart';
 
-import 'package:heavenrock_registry/main.dart';
+import 'package:heavenrock_registry/app.dart';
 
 void main() {
   setUpAll(() async {
