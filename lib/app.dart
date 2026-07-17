@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'data/repositories/firestore_registry_repository.dart';
+import 'presentation/theme/app_colors.dart';
 import 'presentation/viewmodels/auth_view_model.dart';
 import 'presentation/viewmodels/registry_view_model.dart';
 import 'presentation/views/registry_home_page.dart';
@@ -36,10 +37,10 @@ class _GuestHouseRegistryAppState extends State<GuestHouseRegistryApp> {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF0066CC),
+          seedColor: AppColors.brandPrimary,
           brightness: Brightness.light,
         ),
-        scaffoldBackgroundColor: const Color(0xFFF5F7FA),
+        scaffoldBackgroundColor: AppColors.appBackground,
         inputDecorationTheme: const InputDecorationTheme(
           border: OutlineInputBorder(),
           isDense: true,
