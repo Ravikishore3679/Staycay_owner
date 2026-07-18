@@ -1907,7 +1907,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       for (int month = 1; month <= 12; month++)
                         DropdownMenuItem(
                           value: month,
-                          child: Text(_monthName(month)),
+                          child: Text(
+                            _monthName(month),
+                            style: const TextStyle(color: AppColors.dashboardText),
+                          ),
                         ),
                     ],
                     onChanged: (value) {
@@ -1928,7 +1931,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
                         .map(
                           (year) => DropdownMenuItem(
                             value: year,
-                            child: Text(year.toString()),
+                            child: Text(
+                              year.toString(),
+                              style: const TextStyle(color: AppColors.dashboardText),
+                            ),
                           ),
                         )
                         .toList(),
@@ -2007,11 +2013,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                 booking.name,
                                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w600,
+                                  color: AppColors.dashboardText,
                                 ),
                               ),
                               Text(
                                 booking.phone,
-                                style: Theme.of(context).textTheme.bodySmall,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppColors.dashboardText.withValues(alpha: 0.8),
+                                    ),
                               ),
                             ],
                           ),
@@ -2020,7 +2029,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           _currency(booking.totalAmount),
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
-                            color: Theme.of(context).colorScheme.primary,
+                            color: AppColors.dashboardAccent,
                           ),
                         ),
                       ],
@@ -2031,7 +2040,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       children: [
                         Text(
                           '${_formatDate(booking.checkIn)} to ${_formatDate(booking.checkOut)}',
-                          style: Theme.of(context).textTheme.bodySmall,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppColors.dashboardText.withValues(alpha: 0.8),
+                              ),
                         ),
                         IconButton(
                           onPressed: () => _deleteBooking(booking),
@@ -2054,7 +2065,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               child: Text(
                 'No bookings for ${_monthName(_selectedMonth)} $_selectedYear',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: AppColors.dashboardText.withValues(alpha: 0.8),
                 ),
               ),
             ),
@@ -2085,11 +2096,14 @@ class _ReportsScreenState extends State<ReportsScreen> {
                                 expense.title,
                                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                   fontWeight: FontWeight.w600,
+                                  color: AppColors.dashboardText,
                                 ),
                               ),
                               Text(
                                 expense.description,
-                                style: Theme.of(context).textTheme.bodySmall,
+                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                      color: AppColors.dashboardText.withValues(alpha: 0.8),
+                                    ),
                                 maxLines: 1,
                                 overflow: TextOverflow.ellipsis,
                               ),
@@ -2100,7 +2114,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                           _currency(expense.amount),
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.w700,
-                            color: Theme.of(context).colorScheme.error,
+                            color: AppColors.dashboardAccent,
                           ),
                         ),
                       ],
@@ -2111,7 +2125,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                       children: [
                         Text(
                           _formatDate(expense.date),
-                          style: Theme.of(context).textTheme.bodySmall,
+                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                                color: AppColors.dashboardText.withValues(alpha: 0.8),
+                              ),
                         ),
                         IconButton(
                           onPressed: () => _deleteExpense(expense),
@@ -2133,7 +2149,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               child: Text(
                 'No expenses for ${_monthName(_selectedMonth)} $_selectedYear',
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
+                  color: AppColors.dashboardText.withValues(alpha: 0.8),
                 ),
               ),
             ),
@@ -2593,7 +2609,9 @@ class _ReportCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     title,
-                    style: Theme.of(context).textTheme.titleMedium,
+                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                          color: AppColors.dashboardText,
+                        ),
                   ),
                 ),
               ],
