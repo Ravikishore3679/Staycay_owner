@@ -160,7 +160,13 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
 
         return Scaffold(
           appBar: AppBar(
+            backgroundColor: AppColors.dashboardCard,
+            foregroundColor: AppColors.dashboardText,
             title: Text(widget.guestHouseName),
+            titleTextStyle: Theme.of(context).textTheme.titleLarge?.copyWith(
+                  color: AppColors.dashboardText,
+                  fontWeight: FontWeight.w700,
+                ),
             centerTitle: false,
             surfaceTintColor: Colors.transparent,
             actions: [
@@ -216,7 +222,12 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: CircleAvatar(
                         radius: 16,
-                        child: Text(avatarText),
+                        backgroundColor:
+                            AppColors.dashboardAccent.withValues(alpha: 0.2),
+                        child: Text(
+                          avatarText,
+                          style: const TextStyle(color: AppColors.dashboardText),
+                        ),
                       ),
                     ),
                   );
@@ -264,35 +275,61 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
                     ],
                   ),
           ),
-          bottomNavigationBar: NavigationBar(
-            selectedIndex: _index,
-            destinations: [
-              NavigationDestination(
-                icon: Icon(Icons.dashboard_outlined, size: 20),
-                selectedIcon: Icon(Icons.dashboard, size: 20),
-                label: 'Dashboard',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.bed_outlined, size: 20),
-                selectedIcon: Icon(Icons.bed, size: 20),
-                label: 'Bookings',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.receipt_long_outlined, size: 20),
-                selectedIcon: Icon(Icons.receipt_long, size: 20),
-                label: 'Expenses',
-              ),
-              NavigationDestination(
-                icon: Icon(Icons.analytics_outlined, size: 20),
-                selectedIcon: Icon(Icons.analytics, size: 20),
-                label: 'Reports',
-              ),
-            ],
-            onDestinationSelected: (newIndex) {
-              setState(() {
-                _index = newIndex;
-              });
-            },
+          bottomNavigationBar: NavigationBarTheme(
+            data: NavigationBarThemeData(
+              backgroundColor: AppColors.dashboardCard,
+              indicatorColor: AppColors.dashboardAccent.withValues(alpha: 0.22),
+              labelTextStyle:
+                  WidgetStateProperty.resolveWith<TextStyle?>((states) {
+                final isSelected = states.contains(WidgetState.selected);
+                return TextStyle(
+                  color: isSelected
+                      ? AppColors.dashboardAccent
+                      : AppColors.dashboardText.withValues(alpha: 0.85),
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
+                );
+              }),
+              iconTheme:
+                  WidgetStateProperty.resolveWith<IconThemeData?>((states) {
+                final isSelected = states.contains(WidgetState.selected);
+                return IconThemeData(
+                  color: isSelected
+                      ? AppColors.dashboardAccent
+                      : AppColors.dashboardText.withValues(alpha: 0.85),
+                  size: 20,
+                );
+              }),
+            ),
+            child: NavigationBar(
+              selectedIndex: _index,
+              destinations: const [
+                NavigationDestination(
+                  icon: Icon(Icons.dashboard_outlined),
+                  selectedIcon: Icon(Icons.dashboard),
+                  label: 'Dashboard',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.bed_outlined),
+                  selectedIcon: Icon(Icons.bed),
+                  label: 'Bookings',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.receipt_long_outlined),
+                  selectedIcon: Icon(Icons.receipt_long),
+                  label: 'Expenses',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.analytics_outlined),
+                  selectedIcon: Icon(Icons.analytics),
+                  label: 'Reports',
+                ),
+              ],
+              onDestinationSelected: (newIndex) {
+                setState(() {
+                  _index = newIndex;
+                });
+              },
+            ),
           ),
         );
       },
@@ -313,10 +350,12 @@ class DashboardScreen extends StatelessWidget {
     final net = revenue - expense;
     final progressMax = math.max(revenue, expense) <= 0 ? 1.0 : math.max(revenue, expense);
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        _SectionTitle(
+    return Container(
+      color: AppColors.dashboardCanvas,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          const _DashboardSectionTitle(
           icon: Icons.insights,
           title: 'Revenue vs Expenditure',
           subtitle: 'Overall financial snapshot',
@@ -329,8 +368,9 @@ class DashboardScreen extends StatelessWidget {
                 label: 'Revenue',
                 value: _currency(revenue),
                 icon: Icons.trending_up,
-                color: AppColors.revenue,
-                lightColor: AppColors.revenueSoft,
+                color: AppColors.dashboardAccent,
+                cardColor: AppColors.dashboardCard,
+                textColor: AppColors.dashboardText,
               ),
             ),
             const SizedBox(width: 12),
@@ -339,14 +379,16 @@ class DashboardScreen extends StatelessWidget {
                 label: 'Expenditure',
                 value: _currency(expense),
                 icon: Icons.trending_down,
-                color: AppColors.expense,
-                lightColor: AppColors.expenseSoft,
+                color: AppColors.dashboardAccent,
+                cardColor: AppColors.dashboardCard,
+                textColor: AppColors.dashboardText,
               ),
             ),
           ],
         ),
         const SizedBox(height: 12),
         Card(
+          color: AppColors.dashboardCard,
           child: Padding(
             padding: const EdgeInsets.all(16),
             child: Column(
@@ -356,32 +398,33 @@ class DashboardScreen extends StatelessWidget {
                   label: 'Revenue',
                   value: revenue,
                   max: progressMax,
-                  color: AppColors.revenueBar,
+                  color: AppColors.dashboardAccent,
+                  textColor: AppColors.dashboardText,
                 ),
                 const SizedBox(height: 12),
                 _FinancialSummaryBar(
                   label: 'Expenditure',
                   value: expense,
                   max: progressMax,
-                  color: AppColors.expenseBar,
+                  color: AppColors.dashboardAccent,
+                  textColor: AppColors.dashboardText,
                 ),
                 const SizedBox(height: 14),
                 Container(
                   width: double.infinity,
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: net >= 0
-                          ? const [AppColors.netPositiveStart, AppColors.netPositiveEnd]
-                          : const [AppColors.netNegativeStart, AppColors.netNegativeEnd],
-                    ),
+                    color: AppColors.dashboardCanvas,
                     borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: AppColors.dashboardAccent.withValues(alpha: 0.45),
+                    ),
                   ),
                   child: Row(
                     children: [
                       Icon(
                         net >= 0 ? Icons.savings_outlined : Icons.warning_amber_rounded,
-                        color: net >= 0 ? AppColors.revenue : AppColors.expense,
+                        color: AppColors.dashboardAccent,
                       ),
                       const SizedBox(width: 8),
                       Expanded(
@@ -389,7 +432,7 @@ class DashboardScreen extends StatelessWidget {
                           'Net: ${_currency(net)}',
                           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                                 fontWeight: FontWeight.w700,
-                              color: net >= 0 ? AppColors.revenueDark : AppColors.expenseDark,
+                                color: AppColors.dashboardText,
                               ),
                         ),
                       ),
@@ -401,37 +444,67 @@ class DashboardScreen extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 20),
-        _SectionTitle(
+        const _DashboardSectionTitle(
           icon: Icons.event_available,
           title: 'Top 3 Upcoming Bookings',
           subtitle: 'Nearest check-ins first',
         ),
         const SizedBox(height: 12),
         if (upcoming.isEmpty)
-          const _EmptyCard(message: 'No upcoming bookings yet.')
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: AppColors.dashboardCard,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.inbox_outlined, color: AppColors.dashboardText.withValues(alpha: 0.8)),
+                const SizedBox(width: 10),
+                Text(
+                  'No upcoming bookings yet.',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodyMedium
+                      ?.copyWith(color: AppColors.dashboardText),
+                ),
+              ],
+            ),
+          )
         else
           ...upcoming.map(
             (booking) => Card(
-              color: AppColors.upcomingCard,
+              color: AppColors.dashboardCard,
               child: ListTile(
                 leading: CircleAvatar(
-                  backgroundColor: AppColors.upcomingAvatar,
-                  child: Text('${booking.guests}'),
+                  backgroundColor: AppColors.dashboardAccent.withValues(alpha: 0.2),
+                  child: Text(
+                    '${booking.guests}',
+                    style: const TextStyle(color: AppColors.dashboardText),
+                  ),
                 ),
-                title: Text(booking.name),
+                title: Text(
+                  booking.name,
+                  style: const TextStyle(color: AppColors.dashboardText),
+                ),
                 subtitle: Text(
                   '${_formatDate(booking.checkIn)}  ->  ${_formatDate(booking.checkOut)}',
+                  style: TextStyle(
+                    color: AppColors.dashboardText.withValues(alpha: 0.8),
+                  ),
                 ),
                 trailing: Text(
                   _currency(booking.totalAmount),
                   style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.w700,
+                        color: AppColors.dashboardAccent,
                       ),
                 ),
               ),
             ),
           ),
-      ],
+        ],
+      ),
     );
   }
 }
@@ -1014,11 +1087,16 @@ class _BookingsScreenState extends State<BookingsScreen> {
     final total = _toAmount(_totalCtrl.text);
     final advance = _toAmount(_advanceCtrl.text);
     final remaining = total - advance;
+    final nightTheme = _nightTabTheme(context);
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        _SectionTitle(
+    return Theme(
+      data: nightTheme,
+      child: Container(
+        color: AppColors.dashboardCanvas,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            _SectionTitle(
           icon: Icons.edit_note,
           title: 'New Booking Entry',
           subtitle: 'Add guest details with payment split',
@@ -1344,7 +1422,9 @@ class _BookingsScreenState extends State<BookingsScreen> {
               ),
             ),
           ),
-      ],
+          ],
+        ),
+      ),
     );
   }
 }
@@ -1491,11 +1571,16 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
   @override
   Widget build(BuildContext context) {
     final expenses = widget.controller.expenses;
+    final nightTheme = _nightTabTheme(context);
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        _SectionTitle(
+    return Theme(
+      data: nightTheme,
+      child: Container(
+        color: AppColors.dashboardCanvas,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            _SectionTitle(
           icon: Icons.add_card,
           title: 'Add Expense',
           subtitle: 'Track operational expenditures',
@@ -1649,7 +1734,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                           textAlign: TextAlign.end,
                           style:
                               Theme.of(context).textTheme.labelLarge?.copyWith(
-                                    color: AppColors.textStrong,
+                                    color: AppColors.dashboardAccent,
                                     fontWeight: FontWeight.bold,
                                   ),
                         ),
@@ -1675,7 +1760,9 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
               ),
             ),
           ),
-      ],
+          ],
+        ),
+      ),
     );
   }
 }
@@ -1786,16 +1873,21 @@ class _ReportsScreenState extends State<ReportsScreen> {
     final report =
         widget.controller.getMonthlyReport(_selectedYear, _selectedMonth);
     final years = [for (int y = DateTime.now().year - 2; y <= DateTime.now().year + 2; y++) y];
+    final nightTheme = _nightTabTheme(context);
 
     final monthBookings =
       widget.controller.bookingsForMonth(_selectedYear, _selectedMonth);
     final monthExpenses =
       widget.controller.expensesForMonth(_selectedYear, _selectedMonth);
 
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        _SectionTitle(
+    return Theme(
+      data: nightTheme,
+      child: Container(
+        color: AppColors.dashboardCanvas,
+        child: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            _SectionTitle(
           icon: Icons.filter_alt,
           title: 'Monthly Reports',
           subtitle: 'Filter by month and year',
@@ -1862,7 +1954,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               child: _ReportCard(
                 title: 'Total Revenue',
                 value: _currency(report.revenue),
-                color: AppColors.brandPrimary,
+                color: AppColors.dashboardAccent,
                 icon: Icons.trending_up,
               ),
             ),
@@ -1871,7 +1963,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               child: _ReportCard(
                 title: 'Total Expenses',
                 value: _currency(report.expenses),
-                color: AppColors.expenseReport,
+                color: AppColors.dashboardAccent,
                 icon: Icons.trending_down,
               ),
             ),
@@ -1880,8 +1972,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
               child: _ReportCard(
                 title: 'Net Profit / Loss',
                 value: _currency(report.net),
-                color:
-                  report.net >= 0 ? AppColors.revenue : AppColors.expenseReport,
+                color: AppColors.dashboardAccent,
                 icon: report.net >= 0
                     ? Icons.account_balance_wallet_outlined
                     : Icons.warning_amber,
@@ -2047,7 +2138,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
               ),
             ),
           ),
-      ],
+          ],
+        ),
+      ),
     );
   }
 }
@@ -2072,8 +2165,8 @@ class _SectionTitle extends StatelessWidget {
     return Row(
       children: [
         CircleAvatar(
-          backgroundColor: Theme.of(context).colorScheme.primaryContainer,
-          child: Icon(icon),
+          backgroundColor: AppColors.dashboardAccent.withValues(alpha: 0.2),
+          child: Icon(icon, color: AppColors.dashboardAccent),
         ),
         const SizedBox(width: 12),
         Expanded(
@@ -2083,13 +2176,14 @@ class _SectionTitle extends StatelessWidget {
               Text(
                 title,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: AppColors.dashboardText,
                       fontWeight: FontWeight.w700,
                     ),
               ),
               Text(
                 subtitle,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      color: AppColors.dashboardText.withValues(alpha: 0.8),
                     ),
               ),
             ],
@@ -2255,21 +2349,61 @@ class _EmptyCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
+      color: AppColors.dashboardCard,
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
           children: [
             Icon(
               Icons.inbox_outlined,
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
+              color: AppColors.dashboardText.withValues(alpha: 0.8),
             ),
             const SizedBox(width: 10),
-            Expanded(child: Text(message)),
+            Expanded(
+              child: Text(
+                message,
+                style: const TextStyle(color: AppColors.dashboardText),
+              ),
+            ),
           ],
         ),
       ),
     );
   }
+}
+
+ThemeData _nightTabTheme(BuildContext context) {
+  final base = Theme.of(context);
+
+  return base.copyWith(
+    colorScheme: base.colorScheme.copyWith(
+      primary: AppColors.dashboardAccent,
+      secondary: AppColors.dashboardAccent,
+      onPrimary: AppColors.dashboardCanvas,
+      surface: AppColors.dashboardCard,
+      onSurface: AppColors.dashboardText,
+    ),
+    cardTheme: base.cardTheme.copyWith(color: AppColors.dashboardCard),
+    iconTheme: base.iconTheme.copyWith(color: AppColors.dashboardText),
+    textTheme: base.textTheme.apply(
+      bodyColor: AppColors.dashboardText,
+      displayColor: AppColors.dashboardText,
+    ),
+    inputDecorationTheme: base.inputDecorationTheme.copyWith(
+      labelStyle: const TextStyle(color: Colors.white70),
+      hintStyle: const TextStyle(color: Colors.white54),
+      prefixIconColor: Colors.white70,
+      enabledBorder: OutlineInputBorder(
+        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.25)),
+      ),
+      focusedBorder: const OutlineInputBorder(
+        borderSide: BorderSide(color: AppColors.dashboardAccent),
+      ),
+    ),
+    dropdownMenuTheme: base.dropdownMenuTheme.copyWith(
+      textStyle: const TextStyle(color: AppColors.dashboardText),
+    ),
+  );
 }
 
 class _FinancialSummaryBar extends StatelessWidget {
@@ -2278,12 +2412,14 @@ class _FinancialSummaryBar extends StatelessWidget {
     required this.value,
     required this.max,
     required this.color,
+    this.textColor = Colors.black,
   });
 
   final String label;
   final double value;
   final double max;
   final Color color;
+  final Color textColor;
 
   @override
   Widget build(BuildContext context) {
@@ -2295,10 +2431,16 @@ class _FinancialSummaryBar extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(label),
+            Text(
+              label,
+              style: TextStyle(color: textColor),
+            ),
             Text(
               _currency(value),
-              style: const TextStyle(fontWeight: FontWeight.w700),
+              style: TextStyle(
+                fontWeight: FontWeight.w700,
+                color: textColor,
+              ),
             ),
           ],
         ),
@@ -2323,14 +2465,16 @@ class _DashboardMetricCard extends StatelessWidget {
     required this.value,
     required this.icon,
     required this.color,
-    required this.lightColor,
+    required this.cardColor,
+    required this.textColor,
   });
 
   final String label;
   final String value;
   final IconData icon;
   final Color color;
-  final Color lightColor;
+  final Color cardColor;
+  final Color textColor;
 
   @override
   Widget build(BuildContext context) {
@@ -2338,11 +2482,7 @@ class _DashboardMetricCard extends StatelessWidget {
       padding: const EdgeInsets.all(14),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(14),
-        gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [lightColor, Colors.white],
-        ),
+        color: cardColor,
         border: Border.all(color: color.withValues(alpha: 0.3)),
       ),
       child: Column(
@@ -2355,7 +2495,7 @@ class _DashboardMetricCard extends StatelessWidget {
               Text(
                 label,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: color,
+                      color: textColor,
                       fontWeight: FontWeight.w600,
                     ),
               ),
@@ -2368,11 +2508,56 @@ class _DashboardMetricCard extends StatelessWidget {
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
                   fontWeight: FontWeight.w800,
-                  color: color,
+                  color: textColor,
                 ),
           ),
         ],
       ),
+    );
+  }
+}
+
+class _DashboardSectionTitle extends StatelessWidget {
+  const _DashboardSectionTitle({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        CircleAvatar(
+          backgroundColor: AppColors.dashboardAccent.withValues(alpha: 0.2),
+          child: Icon(icon, color: AppColors.dashboardAccent),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                title,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      color: AppColors.dashboardText,
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+              Text(
+                subtitle,
+                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.dashboardText.withValues(alpha: 0.8),
+                    ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }

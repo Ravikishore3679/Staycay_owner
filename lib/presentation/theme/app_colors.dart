@@ -3,6 +3,12 @@ import 'package:flutter/material.dart';
 class AppColors {
   AppColors._();
 
+  // Dashboard 60/30/10 palette
+  static const Color dashboardCanvas = Color(0xFF121824);
+  static const Color dashboardCard = Color(0xFF1E293B);
+  static const Color dashboardText = Color(0xFFFFFFFF);
+  static const Color dashboardAccent = Color(0xFF22C55E);
+
   static const Color brandPrimary = Color(0xFF0066CC);
   static const Color appBackground = Color(0xFFF5F7FA);
 
