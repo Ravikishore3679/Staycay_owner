@@ -56,9 +56,7 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
               controller: controller,
               autofocus: true,
               textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(
-                labelText: 'Guest house name',
-              ),
+              decoration: const InputDecoration(labelText: 'Guest house name'),
               validator: (value) {
                 final text = value?.trim() ?? '';
                 if (text.isEmpty) return 'Guest house name is required';
@@ -100,47 +98,38 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
       await _authViewModel.signInWithGoogle();
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Signed in with Google')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Signed in with Google')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Google sign-in failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Google sign-in failed: $e')));
     }
   }
 
   Future<void> _signOutToAnonymous() async {
     try {
-      await _authViewModel.signOutToAnonymous();
+      await _authViewModel.signOut();
 
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Switched to anonymous session')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Signed out')));
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Sign-out failed: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Sign-out failed: $e')));
     }
   }
+
   @override
   void initState() {
     super.initState();
     _registryViewModel = widget.registryViewModel;
     _authViewModel = widget.authViewModel;
-    _authViewModel.startListening(onUserChanged: (_) {
-      _registryViewModel.loadData();
-    });
-  }
-
-  @override
-  void dispose() {
-    _authViewModel.dispose();
-    _registryViewModel.dispose();
-    super.dispose();
   }
 
   @override
@@ -164,9 +153,9 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
             foregroundColor: AppColors.dashboardText,
             title: Text(widget.guestHouseName),
             titleTextStyle: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: AppColors.dashboardText,
-                  fontWeight: FontWeight.w700,
-                ),
+              color: AppColors.dashboardText,
+              fontWeight: FontWeight.w700,
+            ),
             centerTitle: false,
             surfaceTintColor: Colors.transparent,
             actions: [
@@ -190,8 +179,9 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
                   final displayName = user.isAnonymous
                       ? 'Guest'
                       : (user.displayName ?? user.email ?? 'Account');
-                    final avatarText =
-                      displayName.isEmpty ? 'A' : displayName[0].toUpperCase();
+                  final avatarText = displayName.isEmpty
+                      ? 'A'
+                      : displayName[0].toUpperCase();
 
                   return PopupMenuButton<String>(
                     tooltip: 'Account',
@@ -222,11 +212,14 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: CircleAvatar(
                         radius: 16,
-                        backgroundColor:
-                            AppColors.dashboardAccent.withValues(alpha: 0.2),
+                        backgroundColor: AppColors.dashboardAccent.withValues(
+                          alpha: 0.2,
+                        ),
                         child: Text(
                           avatarText,
-                          style: const TextStyle(color: AppColors.dashboardText),
+                          style: const TextStyle(
+                            color: AppColors.dashboardText,
+                          ),
                         ),
                       ),
                     ),
@@ -236,7 +229,8 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
             ],
           ),
           body: SafeArea(
-            child: _registryViewModel.isLoading &&
+            child:
+                _registryViewModel.isLoading &&
                     _registryViewModel.bookings.isEmpty &&
                     _registryViewModel.expenses.isEmpty
                 ? const Center(child: CircularProgressIndicator())
@@ -244,10 +238,9 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
                     children: [
                       if (_registryViewModel.errorMessage != null)
                         Material(
-                          color: Theme.of(context)
-                              .colorScheme
-                              .errorContainer
-                              .withValues(alpha: 0.4),
+                          color: Theme.of(
+                            context,
+                          ).colorScheme.errorContainer.withValues(alpha: 0.4),
                           child: ListTile(
                             dense: true,
                             leading: Icon(
@@ -267,10 +260,7 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
                           ),
                         ),
                       Expanded(
-                        child: IndexedStack(
-                          index: _index,
-                          children: pages,
-                        ),
+                        child: IndexedStack(index: _index, children: pages),
                       ),
                     ],
                   ),
@@ -279,8 +269,9 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
             data: NavigationBarThemeData(
               backgroundColor: AppColors.dashboardCard,
               indicatorColor: AppColors.dashboardAccent.withValues(alpha: 0.22),
-              labelTextStyle:
-                  WidgetStateProperty.resolveWith<TextStyle?>((states) {
+              labelTextStyle: WidgetStateProperty.resolveWith<TextStyle?>((
+                states,
+              ) {
                 final isSelected = states.contains(WidgetState.selected);
                 return TextStyle(
                   color: isSelected
@@ -289,8 +280,9 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 );
               }),
-              iconTheme:
-                  WidgetStateProperty.resolveWith<IconThemeData?>((states) {
+              iconTheme: WidgetStateProperty.resolveWith<IconThemeData?>((
+                states,
+              ) {
                 final isSelected = states.contains(WidgetState.selected);
                 return IconThemeData(
                   color: isSelected
@@ -348,7 +340,9 @@ class DashboardScreen extends StatelessWidget {
     final revenue = controller.totalRevenue;
     final expense = controller.totalExpenditure;
     final net = revenue - expense;
-    final progressMax = math.max(revenue, expense) <= 0 ? 1.0 : math.max(revenue, expense);
+    final progressMax = math.max(revenue, expense) <= 0
+        ? 1.0
+        : math.max(revenue, expense);
 
     return Container(
       color: AppColors.dashboardCanvas,
@@ -356,153 +350,162 @@ class DashboardScreen extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         children: [
           const _DashboardSectionTitle(
-          icon: Icons.insights,
-          title: 'Revenue vs Expenditure',
-          subtitle: 'Overall financial snapshot',
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _DashboardMetricCard(
-                label: 'Revenue',
-                value: _currency(revenue),
-                icon: Icons.trending_up,
-                color: AppColors.dashboardAccent,
-                cardColor: AppColors.dashboardCard,
-                textColor: AppColors.dashboardText,
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _DashboardMetricCard(
-                label: 'Expenditure',
-                value: _currency(expense),
-                icon: Icons.trending_down,
-                color: AppColors.dashboardAccent,
-                cardColor: AppColors.dashboardCard,
-                textColor: AppColors.dashboardText,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Card(
-          color: AppColors.dashboardCard,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _FinancialSummaryBar(
+            icon: Icons.insights,
+            title: 'Revenue vs Expenditure',
+            subtitle: 'Overall financial snapshot',
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _DashboardMetricCard(
                   label: 'Revenue',
-                  value: revenue,
-                  max: progressMax,
+                  value: _currency(revenue),
+                  icon: Icons.trending_up,
                   color: AppColors.dashboardAccent,
+                  cardColor: AppColors.dashboardCard,
                   textColor: AppColors.dashboardText,
                 ),
-                const SizedBox(height: 12),
-                _FinancialSummaryBar(
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _DashboardMetricCard(
                   label: 'Expenditure',
-                  value: expense,
-                  max: progressMax,
+                  value: _currency(expense),
+                  icon: Icons.trending_down,
                   color: AppColors.dashboardAccent,
+                  cardColor: AppColors.dashboardCard,
                   textColor: AppColors.dashboardText,
                 ),
-                const SizedBox(height: 14),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.dashboardCanvas,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(
-                      color: AppColors.dashboardAccent.withValues(alpha: 0.45),
-                    ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Card(
+            color: AppColors.dashboardCard,
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _FinancialSummaryBar(
+                    label: 'Revenue',
+                    value: revenue,
+                    max: progressMax,
+                    color: AppColors.dashboardAccent,
+                    textColor: AppColors.dashboardText,
                   ),
-                  child: Row(
-                    children: [
-                      Icon(
-                        net >= 0 ? Icons.savings_outlined : Icons.warning_amber_rounded,
-                        color: AppColors.dashboardAccent,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Net: ${_currency(net)}',
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.dashboardText,
-                              ),
+                  const SizedBox(height: 12),
+                  _FinancialSummaryBar(
+                    label: 'Expenditure',
+                    value: expense,
+                    max: progressMax,
+                    color: AppColors.dashboardAccent,
+                    textColor: AppColors.dashboardText,
+                  ),
+                  const SizedBox(height: 14),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.dashboardCanvas,
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: AppColors.dashboardAccent.withValues(
+                          alpha: 0.45,
                         ),
                       ),
-                    ],
+                    ),
+                    child: Row(
+                      children: [
+                        Icon(
+                          net >= 0
+                              ? Icons.savings_outlined
+                              : Icons.warning_amber_rounded,
+                          color: AppColors.dashboardAccent,
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            'Net: ${_currency(net)}',
+                            style: Theme.of(context).textTheme.titleMedium
+                                ?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.dashboardText,
+                                ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-              ],
-            ),
-          ),
-        ),
-        const SizedBox(height: 20),
-        const _DashboardSectionTitle(
-          icon: Icons.event_available,
-          title: 'Top 3 Upcoming Bookings',
-          subtitle: 'Nearest check-ins first',
-        ),
-        const SizedBox(height: 12),
-        if (upcoming.isEmpty)
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: AppColors.dashboardCard,
-              borderRadius: BorderRadius.circular(16),
-            ),
-            child: Row(
-              children: [
-                Icon(Icons.inbox_outlined, color: AppColors.dashboardText.withValues(alpha: 0.8)),
-                const SizedBox(width: 10),
-                Text(
-                  'No upcoming bookings yet.',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodyMedium
-                      ?.copyWith(color: AppColors.dashboardText),
-                ),
-              ],
-            ),
-          )
-        else
-          ...upcoming.map(
-            (booking) => Card(
-              color: AppColors.dashboardCard,
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: AppColors.dashboardAccent.withValues(alpha: 0.2),
-                  child: Text(
-                    '${booking.guests}',
-                    style: const TextStyle(color: AppColors.dashboardText),
-                  ),
-                ),
-                title: Text(
-                  booking.name,
-                  style: const TextStyle(color: AppColors.dashboardText),
-                ),
-                subtitle: Text(
-                  '${_formatDate(booking.checkIn)}  ->  ${_formatDate(booking.checkOut)}',
-                  style: TextStyle(
-                    color: AppColors.dashboardText.withValues(alpha: 0.8),
-                  ),
-                ),
-                trailing: Text(
-                  _currency(booking.totalAmount),
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.dashboardAccent,
-                      ),
-                ),
+                ],
               ),
             ),
           ),
+          const SizedBox(height: 20),
+          const _DashboardSectionTitle(
+            icon: Icons.event_available,
+            title: 'Top 3 Upcoming Bookings',
+            subtitle: 'Nearest check-ins first',
+          ),
+          const SizedBox(height: 12),
+          if (upcoming.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.dashboardCard,
+                borderRadius: BorderRadius.circular(16),
+              ),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.inbox_outlined,
+                    color: AppColors.dashboardText.withValues(alpha: 0.8),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    'No upcoming bookings yet.',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.dashboardText,
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            ...upcoming.map(
+              (booking) => Card(
+                color: AppColors.dashboardCard,
+                child: ListTile(
+                  leading: CircleAvatar(
+                    backgroundColor: AppColors.dashboardAccent.withValues(
+                      alpha: 0.2,
+                    ),
+                    child: Text(
+                      '${booking.guests}',
+                      style: const TextStyle(color: AppColors.dashboardText),
+                    ),
+                  ),
+                  title: Text(
+                    booking.name,
+                    style: const TextStyle(color: AppColors.dashboardText),
+                  ),
+                  subtitle: Text(
+                    '${_formatDate(booking.checkIn)}  ->  ${_formatDate(booking.checkOut)}',
+                    style: TextStyle(
+                      color: AppColors.dashboardText.withValues(alpha: 0.8),
+                    ),
+                  ),
+                  trailing: Text(
+                    _currency(booking.totalAmount),
+                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.dashboardAccent,
+                    ),
+                  ),
+                ),
+              ),
+            ),
         ],
       ),
     );
@@ -623,8 +626,9 @@ class _BookingsScreenState extends State<BookingsScreen> {
               child: pw.Text(
                 value,
                 style: pw.TextStyle(
-                  fontWeight:
-                      emphasize ? pw.FontWeight.bold : pw.FontWeight.normal,
+                  fontWeight: emphasize
+                      ? pw.FontWeight.bold
+                      : pw.FontWeight.normal,
                 ),
               ),
             ),
@@ -651,7 +655,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
                     pw.Text(
-                        widget.guestHouseName,
+                      widget.guestHouseName,
                       style: pw.TextStyle(
                         fontSize: 18,
                         fontWeight: pw.FontWeight.bold,
@@ -752,10 +756,9 @@ class _BookingsScreenState extends State<BookingsScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                          widget.guestHouseName,
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                            ),
+                        widget.guestHouseName,
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.w700),
                       ),
                       const SizedBox(height: 4),
                       Text('Receipt ID: ${booking.id}'),
@@ -767,7 +770,10 @@ class _BookingsScreenState extends State<BookingsScreen> {
                 _ReceiptRow(label: 'Guest Name', value: booking.name),
                 _ReceiptRow(label: 'Phone', value: booking.phone),
                 _ReceiptRow(label: 'Aadhaar', value: booking.aadhaar),
-                _ReceiptRow(label: 'Check-in', value: _formatDate(booking.checkIn)),
+                _ReceiptRow(
+                  label: 'Check-in',
+                  value: _formatDate(booking.checkIn),
+                ),
                 _ReceiptRow(
                   label: 'Check-out',
                   value: _formatDate(booking.checkOut),
@@ -789,9 +795,9 @@ class _BookingsScreenState extends State<BookingsScreen> {
                 const SizedBox(height: 16),
                 Text(
                   'Stay Rules',
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.w700,
-                      ),
+                  style: Theme.of(
+                    context,
+                  ).textTheme.titleSmall?.copyWith(fontWeight: FontWeight.w700),
                 ),
                 const SizedBox(height: 8),
                 ..._houseRules.map(
@@ -920,8 +926,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                           FilteringTextInputFormatter.digitsOnly,
                           LengthLimitingTextInputFormatter(12),
                         ],
-                        decoration:
-                            const InputDecoration(labelText: 'Aadhaar'),
+                        decoration: const InputDecoration(labelText: 'Aadhaar'),
                         validator: (value) {
                           final v = value?.trim() ?? '';
                           if (v.isEmpty) return 'Aadhaar is required';
@@ -959,8 +964,9 @@ class _BookingsScreenState extends State<BookingsScreen> {
                           FilteringTextInputFormatter.digitsOnly,
                           LengthLimitingTextInputFormatter(2),
                         ],
-                        decoration:
-                            const InputDecoration(labelText: 'No. of Guests'),
+                        decoration: const InputDecoration(
+                          labelText: 'No. of Guests',
+                        ),
                         validator: (value) {
                           final v = int.tryParse(value?.trim() ?? '');
                           if (v == null) return 'Guests count is required';
@@ -971,10 +977,12 @@ class _BookingsScreenState extends State<BookingsScreen> {
                       const SizedBox(height: 10),
                       TextFormField(
                         controller: totalCtrl,
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
-                        decoration:
-                            const InputDecoration(labelText: 'Total Amount'),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: const InputDecoration(
+                          labelText: 'Total Amount',
+                        ),
                         validator: (value) {
                           final v = double.tryParse(value?.trim() ?? '');
                           if (v == null) return 'Total amount is required';
@@ -986,10 +994,12 @@ class _BookingsScreenState extends State<BookingsScreen> {
                       const SizedBox(height: 10),
                       TextFormField(
                         controller: advanceCtrl,
-                        keyboardType:
-                            const TextInputType.numberWithOptions(decimal: true),
-                        decoration:
-                            const InputDecoration(labelText: 'Advance Paid'),
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: const InputDecoration(
+                          labelText: 'Advance Paid',
+                        ),
                         validator: (value) {
                           final a = double.tryParse(value?.trim() ?? '');
                           final t = double.tryParse(totalCtrl.text.trim());
@@ -1007,9 +1017,8 @@ class _BookingsScreenState extends State<BookingsScreen> {
                         alignment: Alignment.centerLeft,
                         child: Text(
                           'Remaining: ${_currency(remaining)}',
-                          style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w700,
-                              ),
+                          style: Theme.of(context).textTheme.bodyMedium
+                              ?.copyWith(fontWeight: FontWeight.w700),
                         ),
                       ),
                     ],
@@ -1027,8 +1036,9 @@ class _BookingsScreenState extends State<BookingsScreen> {
                     if (!checkOut.isAfter(checkIn)) {
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
-                          content:
-                              Text('Check-out must be after check-in date'),
+                          content: Text(
+                            'Check-out must be after check-in date',
+                          ),
                         ),
                       );
                       return;
@@ -1097,331 +1107,352 @@ class _BookingsScreenState extends State<BookingsScreen> {
           padding: const EdgeInsets.all(16),
           children: [
             _SectionTitle(
-          icon: Icons.edit_note,
-          title: 'New Booking Entry',
-          subtitle: 'Add guest details with payment split',
-        ),
-        const SizedBox(height: 12),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  TextFormField(
-                    controller: _nameCtrl,
-                    textCapitalization: TextCapitalization.words,
-                    decoration: const InputDecoration(
-                      labelText: 'Name',
-                      hintText: 'Guest full name',
-                      prefixIcon: Icon(Icons.person_outline),
-                    ),
-                    validator: (value) {
-                      final v = value?.trim() ?? '';
-                      if (v.isEmpty) return 'Name is required';
-                      if (v.length < 3) return 'Enter at least 3 characters';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _phoneCtrl,
-                    keyboardType: TextInputType.phone,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(10),
-                    ],
-                    decoration: const InputDecoration(
-                      labelText: 'Phone',
-                      hintText: '10-digit mobile number',
-                      prefixIcon: Icon(Icons.phone_outlined),
-                    ),
-                    validator: (value) {
-                      final v = value?.trim() ?? '';
-                      if (v.isEmpty) return 'Phone number is required';
-                      if (v.length != 10) return 'Phone must be 10 digits';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _aadhaarCtrl,
-                    keyboardType: TextInputType.number,
-                    inputFormatters: [
-                      FilteringTextInputFormatter.digitsOnly,
-                      LengthLimitingTextInputFormatter(12),
-                    ],
-                    decoration: const InputDecoration(
-                      labelText: 'Aadhaar',
-                      hintText: '12-digit Aadhaar number',
-                      prefixIcon: Icon(Icons.badge_outlined),
-                    ),
-                    validator: (value) {
-                      final v = value?.trim() ?? '';
-                      if (v.isEmpty) return 'Aadhaar is required';
-                      if (v.length != 12) return 'Aadhaar must be 12 digits';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
+              icon: Icons.edit_note,
+              title: 'New Booking Entry',
+              subtitle: 'Add guest details with payment split',
+            ),
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
                     children: [
-                      Expanded(
-                        child: _DateField(
-                          label: 'Check-in',
-                          value: _checkIn,
-                          onTap: () => _pickDate(isCheckIn: true),
+                      TextFormField(
+                        controller: _nameCtrl,
+                        textCapitalization: TextCapitalization.words,
+                        decoration: const InputDecoration(
+                          labelText: 'Name',
+                          hintText: 'Guest full name',
+                          prefixIcon: Icon(Icons.person_outline),
                         ),
+                        validator: (value) {
+                          final v = value?.trim() ?? '';
+                          if (v.isEmpty) return 'Name is required';
+                          if (v.length < 3) {
+                            return 'Enter at least 3 characters';
+                          }
+                          return null;
+                        },
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _DateField(
-                          label: 'Check-out',
-                          value: _checkOut,
-                          onTap: () => _pickDate(isCheckIn: false),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _phoneCtrl,
+                        keyboardType: TextInputType.phone,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(10),
+                        ],
+                        decoration: const InputDecoration(
+                          labelText: 'Phone',
+                          hintText: '10-digit mobile number',
+                          prefixIcon: Icon(Icons.phone_outlined),
                         ),
+                        validator: (value) {
+                          final v = value?.trim() ?? '';
+                          if (v.isEmpty) return 'Phone number is required';
+                          if (v.length != 10) return 'Phone must be 10 digits';
+                          return null;
+                        },
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _guestsCtrl,
-                          keyboardType: TextInputType.number,
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            LengthLimitingTextInputFormatter(2),
-                          ],
-                          decoration: const InputDecoration(
-                            labelText: 'No. of Guests',
-                            prefixIcon: Icon(Icons.groups_2_outlined),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _aadhaarCtrl,
+                        keyboardType: TextInputType.number,
+                        inputFormatters: [
+                          FilteringTextInputFormatter.digitsOnly,
+                          LengthLimitingTextInputFormatter(12),
+                        ],
+                        decoration: const InputDecoration(
+                          labelText: 'Aadhaar',
+                          hintText: '12-digit Aadhaar number',
+                          prefixIcon: Icon(Icons.badge_outlined),
+                        ),
+                        validator: (value) {
+                          final v = value?.trim() ?? '';
+                          if (v.isEmpty) return 'Aadhaar is required';
+                          if (v.length != 12) {
+                            return 'Aadhaar must be 12 digits';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _DateField(
+                              label: 'Check-in',
+                              value: _checkIn,
+                              onTap: () => _pickDate(isCheckIn: true),
+                            ),
                           ),
-                          validator: (value) {
-                            final v = int.tryParse(value?.trim() ?? '');
-                            if (v == null) return 'Guests count is required';
-                            if (v <= 0) return 'Guests must be at least 1';
-                            return null;
-                          },
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: TextFormField(
-                          controller: _totalCtrl,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _DateField(
+                              label: 'Check-out',
+                              value: _checkOut,
+                              onTap: () => _pickDate(isCheckIn: false),
+                            ),
                           ),
-                          decoration: const InputDecoration(
-                            labelText: 'Total Amount',
-                            prefixText: 'Rs ',
-                          ),
-                          validator: (value) {
-                            final v = double.tryParse(value?.trim() ?? '');
-                            if (v == null) return 'Total amount is required';
-                            if (v <= 0) return 'Must be greater than 0';
-                            return null;
-                          },
-                          onChanged: (_) => setState(() {}),
-                        ),
+                        ],
                       ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          controller: _advanceCtrl,
-                          keyboardType: const TextInputType.numberWithOptions(
-                            decimal: true,
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _guestsCtrl,
+                              keyboardType: TextInputType.number,
+                              inputFormatters: [
+                                FilteringTextInputFormatter.digitsOnly,
+                                LengthLimitingTextInputFormatter(2),
+                              ],
+                              decoration: const InputDecoration(
+                                labelText: 'No. of Guests',
+                                prefixIcon: Icon(Icons.groups_2_outlined),
+                              ),
+                              validator: (value) {
+                                final v = int.tryParse(value?.trim() ?? '');
+                                if (v == null) {
+                                  return 'Guests count is required';
+                                }
+                                if (v <= 0) return 'Guests must be at least 1';
+                                return null;
+                              },
+                            ),
                           ),
-                          decoration: const InputDecoration(
-                            labelText: 'Advance Paid',
-                            prefixText: 'Rs ',
-                          ),
-                          validator: (value) {
-                            final a = double.tryParse(value?.trim() ?? '');
-                            final t = double.tryParse(_totalCtrl.text.trim());
-                            if (a == null) return 'Advance amount is required';
-                            if (a < 0) return 'Advance cannot be negative';
-                            if (t != null && a > t) {
-                              return 'Advance cannot exceed total';
-                            }
-                            return null;
-                          },
-                          onChanged: (_) => setState(() {}),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: _ReadOnlyAmountCard(
-                          label: 'Remaining Amount',
-                          amount: remaining,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: () async {
-                            final messenger = ScaffoldMessenger.of(context);
-                            if (!(_formKey.currentState?.validate() ?? false)) {
-                              return;
-                            }
-                            if (_checkIn == null || _checkOut == null) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                      'Please select both check-in and check-out dates'),
-                                ),
-                              );
-                              return;
-                            }
-                            if (!_checkOut!.isAfter(_checkIn!)) {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text(
-                                      'Check-out must be after check-in date'),
-                                ),
-                              );
-                              return;
-                            }
-
-                            final booking = Booking(
-                              id: DateTime.now()
-                                  .microsecondsSinceEpoch
-                                  .toString(),
-                              name: _nameCtrl.text.trim(),
-                              phone: _phoneCtrl.text.trim(),
-                              aadhaar: _aadhaarCtrl.text.trim(),
-                              checkIn: _checkIn!,
-                              checkOut: _checkOut!,
-                              guests: int.parse(_guestsCtrl.text.trim()),
-                              totalAmount: _toAmount(_totalCtrl.text),
-                              advancePaid: _toAmount(_advanceCtrl.text),
-                            );
-
-                            try {
-                              await widget.controller.addBooking(booking);
-                              _clearForm();
-                              if (!mounted) return;
-                              messenger.showSnackBar(
-                                const SnackBar(
-                                  content: Text('Booking added successfully'),
-                                ),
-                              );
-                              try {
-                                await _showBookingReceipt(booking);
-                              } catch (e) {
-                                if (!mounted) return;
-                                messenger.showSnackBar(
-                                  SnackBar(
-                                    content: Text(
-                                      'Booking saved, but receipt preview failed: $e',
-                                    ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _totalCtrl,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
                                   ),
-                                );
-                              }
-                            } catch (e) {
-                              if (!mounted) return;
-                              messenger.showSnackBar(
-                                SnackBar(
-                                  content: Text('Failed to add booking: $e'),
-                                ),
-                              );
-                            }
-                          },
-                          icon: const Icon(Icons.add_task, size: 18),
-                          label: const Text('Add Booking'),
-                        ),
+                              decoration: const InputDecoration(
+                                labelText: 'Total Amount',
+                                prefixText: 'Rs ',
+                              ),
+                              validator: (value) {
+                                final v = double.tryParse(value?.trim() ?? '');
+                                if (v == null) {
+                                  return 'Total amount is required';
+                                }
+                                if (v <= 0) return 'Must be greater than 0';
+                                return null;
+                              },
+                              onChanged: (_) => setState(() {}),
+                            ),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 12),
-                      OutlinedButton(
-                        onPressed: _clearForm,
-                        child: const Text('Clear'),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _advanceCtrl,
+                              keyboardType:
+                                  const TextInputType.numberWithOptions(
+                                    decimal: true,
+                                  ),
+                              decoration: const InputDecoration(
+                                labelText: 'Advance Paid',
+                                prefixText: 'Rs ',
+                              ),
+                              validator: (value) {
+                                final a = double.tryParse(value?.trim() ?? '');
+                                final t = double.tryParse(
+                                  _totalCtrl.text.trim(),
+                                );
+                                if (a == null) {
+                                  return 'Advance amount is required';
+                                }
+                                if (a < 0) return 'Advance cannot be negative';
+                                if (t != null && a > t) {
+                                  return 'Advance cannot exceed total';
+                                }
+                                return null;
+                              },
+                              onChanged: (_) => setState(() {}),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: _ReadOnlyAmountCard(
+                              label: 'Remaining Amount',
+                              amount: remaining,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: FilledButton.icon(
+                              onPressed: () async {
+                                final messenger = ScaffoldMessenger.of(context);
+                                if (!(_formKey.currentState?.validate() ??
+                                    false)) {
+                                  return;
+                                }
+                                if (_checkIn == null || _checkOut == null) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Please select both check-in and check-out dates',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+                                if (!_checkOut!.isAfter(_checkIn!)) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Check-out must be after check-in date',
+                                      ),
+                                    ),
+                                  );
+                                  return;
+                                }
+
+                                final booking = Booking(
+                                  id: DateTime.now().microsecondsSinceEpoch
+                                      .toString(),
+                                  name: _nameCtrl.text.trim(),
+                                  phone: _phoneCtrl.text.trim(),
+                                  aadhaar: _aadhaarCtrl.text.trim(),
+                                  checkIn: _checkIn!,
+                                  checkOut: _checkOut!,
+                                  guests: int.parse(_guestsCtrl.text.trim()),
+                                  totalAmount: _toAmount(_totalCtrl.text),
+                                  advancePaid: _toAmount(_advanceCtrl.text),
+                                );
+
+                                try {
+                                  await widget.controller.addBooking(booking);
+                                  _clearForm();
+                                  if (!mounted) return;
+                                  messenger.showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Booking added successfully',
+                                      ),
+                                    ),
+                                  );
+                                  try {
+                                    await _showBookingReceipt(booking);
+                                  } catch (e) {
+                                    if (!mounted) return;
+                                    messenger.showSnackBar(
+                                      SnackBar(
+                                        content: Text(
+                                          'Booking saved, but receipt preview failed: $e',
+                                        ),
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  if (!mounted) return;
+                                  messenger.showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Failed to add booking: $e',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                              icon: const Icon(Icons.add_task, size: 18),
+                              label: const Text('Add Booking'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          OutlinedButton(
+                            onPressed: _clearForm,
+                            child: const Text('Clear'),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
             ),
-          ),
-        ),
-        const SizedBox(height: 20),
-        _SectionTitle(
-          icon: Icons.list_alt,
-          title: 'Current & Past Bookings',
-          subtitle: 'All booking records',
-        ),
-        const SizedBox(height: 12),
-        if (bookings.isEmpty)
-          const _EmptyCard(message: 'No bookings found.')
-        else
-          ...bookings.map(
-            (booking) => Card(
-              child: ExpansionTile(
-                tilePadding:
-                    const EdgeInsets.symmetric(horizontal: 16, vertical: 2),
-                childrenPadding:
-                    const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                leading: CircleAvatar(
-                  backgroundColor: booking.isUpcoming
-                      ? AppColors.upcomingIndicator
-                      : AppColors.historyIndicator,
-                  child: Icon(
-                    booking.isUpcoming
-                        ? Icons.event_available
-                        : Icons.history,
-                    color: booking.isUpcoming
-                        ? AppColors.revenueBar
-                        : AppColors.historyIcon,
-                  ),
-                ),
-                title: Text(booking.name),
-                subtitle: Text(
-                  '${_formatDate(booking.checkIn)}  ->  ${_formatDate(booking.checkOut)}',
-                ),
-                trailing: Text(
-                  _currency(booking.totalAmount),
-                  style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            const SizedBox(height: 20),
+            _SectionTitle(
+              icon: Icons.list_alt,
+              title: 'Current & Past Bookings',
+              subtitle: 'All booking records',
+            ),
+            const SizedBox(height: 12),
+            if (bookings.isEmpty)
+              const _EmptyCard(message: 'No bookings found.')
+            else
+              ...bookings.map(
+                (booking) => Card(
+                  child: ExpansionTile(
+                    tilePadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 2,
+                    ),
+                    childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
+                    leading: CircleAvatar(
+                      backgroundColor: booking.isUpcoming
+                          ? AppColors.upcomingIndicator
+                          : AppColors.historyIndicator,
+                      child: Icon(
+                        booking.isUpcoming
+                            ? Icons.event_available
+                            : Icons.history,
+                        color: booking.isUpcoming
+                            ? AppColors.revenueBar
+                            : AppColors.historyIcon,
+                      ),
+                    ),
+                    title: Text(booking.name),
+                    subtitle: Text(
+                      '${_formatDate(booking.checkIn)}  ->  ${_formatDate(booking.checkOut)}',
+                    ),
+                    trailing: Text(
+                      _currency(booking.totalAmount),
+                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
                       ),
-                ),
-                children: [
-                  _BookingMetaRow(label: 'Phone', value: booking.phone),
-                  _BookingMetaRow(label: 'Aadhaar', value: booking.aadhaar),
-                  _BookingMetaRow(
-                    label: 'Guests',
-                    value: booking.guests.toString(),
-                  ),
-                  _BookingMetaRow(
-                    label: 'Advance Paid',
-                    value: _currency(booking.advancePaid),
-                  ),
-                  _BookingMetaRow(
-                    label: 'Remaining',
-                    value: _currency(booking.remainingAmount),
-                  ),
-                  const SizedBox(height: 10),
-                  Row(
+                    ),
                     children: [
-                      TextButton.icon(
-                        onPressed: () => _editBooking(booking),
-                        icon: const Icon(Icons.edit_outlined, size: 18),
-                        label: const Text('Edit'),
+                      _BookingMetaRow(label: 'Phone', value: booking.phone),
+                      _BookingMetaRow(label: 'Aadhaar', value: booking.aadhaar),
+                      _BookingMetaRow(
+                        label: 'Guests',
+                        value: booking.guests.toString(),
+                      ),
+                      _BookingMetaRow(
+                        label: 'Advance Paid',
+                        value: _currency(booking.advancePaid),
+                      ),
+                      _BookingMetaRow(
+                        label: 'Remaining',
+                        value: _currency(booking.remainingAmount),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          TextButton.icon(
+                            onPressed: () => _editBooking(booking),
+                            icon: const Icon(Icons.edit_outlined, size: 18),
+                            label: const Text('Edit'),
+                          ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
-          ),
           ],
         ),
       ),
@@ -1547,7 +1578,9 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                   if (!dialogContext.mounted || !mounted) return;
                   Navigator.of(dialogContext).pop();
                   messenger.showSnackBar(
-                    const SnackBar(content: Text('Expense updated successfully')),
+                    const SnackBar(
+                      content: Text('Expense updated successfully'),
+                    ),
                   );
                 } catch (e) {
                   if (!mounted) return;
@@ -1581,176 +1614,124 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
           padding: const EdgeInsets.all(16),
           children: [
             _SectionTitle(
-          icon: Icons.add_card,
-          title: 'Add Expense',
-          subtitle: 'Track operational expenditures',
-        ),
-        const SizedBox(height: 12),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  TextFormField(
-                    controller: _titleCtrl,
-                    decoration: const InputDecoration(
-                      labelText: 'Expenditure Title / Category',
-                      prefixIcon: Icon(Icons.category_outlined),
-                    ),
-                    validator: (value) {
-                      final v = value?.trim() ?? '';
-                      if (v.isEmpty) return 'Title or category is required';
-                      if (v.length < 3) return 'Enter at least 3 characters';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _amountCtrl,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                    ),
-                    decoration: const InputDecoration(
-                      labelText: 'Amount',
-                      prefixText: 'Rs ',
-                      prefixIcon: Icon(Icons.currency_rupee),
-                    ),
-                    validator: (value) {
-                      final v = double.tryParse(value?.trim() ?? '');
-                      if (v == null) return 'Amount is required';
-                      if (v <= 0) return 'Amount must be greater than 0';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 12),
-                  TextFormField(
-                    controller: _descriptionCtrl,
-                    minLines: 2,
-                    maxLines: 4,
-                    decoration: const InputDecoration(
-                      labelText: 'Description',
-                      alignLabelWithHint: true,
-                      prefixIcon: Icon(Icons.notes_outlined),
-                    ),
-                    validator: (value) {
-                      final v = value?.trim() ?? '';
-                      if (v.isEmpty) return 'Description is required';
-                      if (v.length < 5) return 'Enter at least 5 characters';
-                      return null;
-                    },
-                  ),
-                  const SizedBox(height: 14),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: FilledButton.icon(
-                          onPressed: () async {
-                            final messenger = ScaffoldMessenger.of(context);
-                            if (!(_formKey.currentState?.validate() ?? false)) {
-                              return;
-                            }
-
-                            try {
-                              await widget.controller.addExpense(
-                                Expense(
-                                  id: DateTime.now()
-                                      .microsecondsSinceEpoch
-                                      .toString(),
-                                  title: _titleCtrl.text.trim(),
-                                  amount:
-                                      double.parse(_amountCtrl.text.trim()),
-                                  description: _descriptionCtrl.text.trim(),
-                                  date: DateTime.now(),
-                                ),
-                              );
-
-                              _clearForm();
-                              if (!mounted) return;
-                              messenger.showSnackBar(
-                                const SnackBar(
-                                  content: Text('Expense added successfully'),
-                                ),
-                              );
-                            } catch (e) {
-                              if (!mounted) return;
-                              messenger.showSnackBar(
-                                SnackBar(
-                                  content: Text('Failed to add expense: $e'),
-                                ),
-                              );
-                            }
-                          },
-                          icon: const Icon(Icons.add, size: 20),
-                          label: const Text('Add Expense'),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-                      OutlinedButton(
-                        onPressed: _clearForm,
-                        child: const Text('Clear'),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+              icon: Icons.add_card,
+              title: 'Add Expense',
+              subtitle: 'Track operational expenditures',
             ),
-          ),
-        ),
-        const SizedBox(height: 20),
-        _SectionTitle(
-          icon: Icons.history,
-          title: 'Past Expenses',
-          subtitle: 'Latest entries shown first',
-        ),
-        const SizedBox(height: 12),
-        if (expenses.isEmpty)
-          const _EmptyCard(message: 'No expenses found.')
-        else
-          ...expenses.map(
-            (expense) => Card(
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor:
-                      Theme.of(context).colorScheme.secondaryContainer,
-                  child: const Icon(Icons.receipt_long),
-                ),
-                title: Text(expense.title),
-                subtitle: Text(
-                  '${expense.description}\n${_formatDate(expense.date)}',
-                ),
-                isThreeLine: true,
-                trailing: SizedBox(
-                  width: 128,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
                     children: [
-                      Flexible(
-                        child: Text(
-                          _currency(expense.amount),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.end,
-                          style:
-                              Theme.of(context).textTheme.labelLarge?.copyWith(
-                                    color: AppColors.dashboardAccent,
-                                    fontWeight: FontWeight.bold,
-                                  ),
+                      TextFormField(
+                        controller: _titleCtrl,
+                        decoration: const InputDecoration(
+                          labelText: 'Expenditure Title / Category',
+                          prefixIcon: Icon(Icons.category_outlined),
                         ),
-                      ),
-                      PopupMenuButton<String>(
-                        icon: const Icon(Icons.more_vert, size: 18),
-                        tooltip: 'Expense actions',
-                        onSelected: (value) {
-                          if (value == 'edit') {
-                            _editExpense(expense);
+                        validator: (value) {
+                          final v = value?.trim() ?? '';
+                          if (v.isEmpty) return 'Title or category is required';
+                          if (v.length < 3) {
+                            return 'Enter at least 3 characters';
                           }
+                          return null;
                         },
-                        itemBuilder: (context) => [
-                          const PopupMenuItem<String>(
-                            value: 'edit',
-                            child: Text('Edit'),
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _amountCtrl,
+                        keyboardType: const TextInputType.numberWithOptions(
+                          decimal: true,
+                        ),
+                        decoration: const InputDecoration(
+                          labelText: 'Amount',
+                          prefixText: 'Rs ',
+                          prefixIcon: Icon(Icons.currency_rupee),
+                        ),
+                        validator: (value) {
+                          final v = double.tryParse(value?.trim() ?? '');
+                          if (v == null) return 'Amount is required';
+                          if (v <= 0) return 'Amount must be greater than 0';
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: _descriptionCtrl,
+                        minLines: 2,
+                        maxLines: 4,
+                        decoration: const InputDecoration(
+                          labelText: 'Description',
+                          alignLabelWithHint: true,
+                          prefixIcon: Icon(Icons.notes_outlined),
+                        ),
+                        validator: (value) {
+                          final v = value?.trim() ?? '';
+                          if (v.isEmpty) return 'Description is required';
+                          if (v.length < 5) {
+                            return 'Enter at least 5 characters';
+                          }
+                          return null;
+                        },
+                      ),
+                      const SizedBox(height: 14),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: FilledButton.icon(
+                              onPressed: () async {
+                                final messenger = ScaffoldMessenger.of(context);
+                                if (!(_formKey.currentState?.validate() ??
+                                    false)) {
+                                  return;
+                                }
+
+                                try {
+                                  await widget.controller.addExpense(
+                                    Expense(
+                                      id: DateTime.now().microsecondsSinceEpoch
+                                          .toString(),
+                                      title: _titleCtrl.text.trim(),
+                                      amount: double.parse(
+                                        _amountCtrl.text.trim(),
+                                      ),
+                                      description: _descriptionCtrl.text.trim(),
+                                      date: DateTime.now(),
+                                    ),
+                                  );
+
+                                  _clearForm();
+                                  if (!mounted) return;
+                                  messenger.showSnackBar(
+                                    const SnackBar(
+                                      content: Text(
+                                        'Expense added successfully',
+                                      ),
+                                    ),
+                                  );
+                                } catch (e) {
+                                  if (!mounted) return;
+                                  messenger.showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        'Failed to add expense: $e',
+                                      ),
+                                    ),
+                                  );
+                                }
+                              },
+                              icon: const Icon(Icons.add, size: 20),
+                              label: const Text('Add Expense'),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          OutlinedButton(
+                            onPressed: _clearForm,
+                            child: const Text('Clear'),
                           ),
                         ],
                       ),
@@ -1759,7 +1740,69 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                 ),
               ),
             ),
-          ),
+            const SizedBox(height: 20),
+            _SectionTitle(
+              icon: Icons.history,
+              title: 'Past Expenses',
+              subtitle: 'Latest entries shown first',
+            ),
+            const SizedBox(height: 12),
+            if (expenses.isEmpty)
+              const _EmptyCard(message: 'No expenses found.')
+            else
+              ...expenses.map(
+                (expense) => Card(
+                  child: ListTile(
+                    leading: CircleAvatar(
+                      backgroundColor: Theme.of(
+                        context,
+                      ).colorScheme.secondaryContainer,
+                      child: const Icon(Icons.receipt_long),
+                    ),
+                    title: Text(expense.title),
+                    subtitle: Text(
+                      '${expense.description}\n${_formatDate(expense.date)}',
+                    ),
+                    isThreeLine: true,
+                    trailing: SizedBox(
+                      width: 128,
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              _currency(expense.amount),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.end,
+                              style: Theme.of(context).textTheme.labelLarge
+                                  ?.copyWith(
+                                    color: AppColors.dashboardAccent,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                            ),
+                          ),
+                          PopupMenuButton<String>(
+                            icon: const Icon(Icons.more_vert, size: 18),
+                            tooltip: 'Expense actions',
+                            onSelected: (value) {
+                              if (value == 'edit') {
+                                _editExpense(expense);
+                              }
+                            },
+                            itemBuilder: (context) => [
+                              const PopupMenuItem<String>(
+                                value: 'edit',
+                                child: Text('Edit'),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
@@ -1822,9 +1865,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete booking: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to delete booking: $e')));
     }
   }
 
@@ -1833,9 +1876,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Expense'),
-        content: Text(
-          'Are you sure you want to delete "${expense.title}"?',
-        ),
+        content: Text('Are you sure you want to delete "${expense.title}"?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -1862,23 +1903,32 @@ class _ReportsScreenState extends State<ReportsScreen> {
       );
     } catch (e) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Failed to delete expense: $e')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Failed to delete expense: $e')));
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final report =
-        widget.controller.getMonthlyReport(_selectedYear, _selectedMonth);
-    final years = [for (int y = DateTime.now().year - 2; y <= DateTime.now().year + 2; y++) y];
+    final report = widget.controller.getMonthlyReport(
+      _selectedYear,
+      _selectedMonth,
+    );
+    final years = [
+      for (int y = DateTime.now().year - 2; y <= DateTime.now().year + 2; y++)
+        y,
+    ];
     final nightTheme = _nightTabTheme(context);
 
-    final monthBookings =
-      widget.controller.bookingsForMonth(_selectedYear, _selectedMonth);
-    final monthExpenses =
-      widget.controller.expensesForMonth(_selectedYear, _selectedMonth);
+    final monthBookings = widget.controller.bookingsForMonth(
+      _selectedYear,
+      _selectedMonth,
+    );
+    final monthExpenses = widget.controller.expensesForMonth(
+      _selectedYear,
+      _selectedMonth,
+    );
 
     return Theme(
       data: nightTheme,
@@ -1888,272 +1938,296 @@ class _ReportsScreenState extends State<ReportsScreen> {
           padding: const EdgeInsets.all(16),
           children: [
             _SectionTitle(
-          icon: Icons.filter_alt,
-          title: 'Monthly Reports',
-          subtitle: 'Filter by month and year',
-        ),
-        const SizedBox(height: 12),
-        Card(
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Row(
+              icon: Icons.filter_alt,
+              title: 'Monthly Reports',
+              subtitle: 'Filter by month and year',
+            ),
+            const SizedBox(height: 12),
+            Card(
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: DropdownButtonFormField<int>(
+                        isExpanded: true,
+                        initialValue: _selectedMonth,
+                        decoration: const InputDecoration(labelText: 'Month'),
+                        items: [
+                          for (int month = 1; month <= 12; month++)
+                            DropdownMenuItem(
+                              value: month,
+                              child: Text(
+                                _monthName(month),
+                                style: const TextStyle(
+                                  color: AppColors.dashboardText,
+                                ),
+                              ),
+                            ),
+                        ],
+                        onChanged: (value) {
+                          if (value == null) return;
+                          setState(() {
+                            _selectedMonth = value;
+                          });
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: DropdownButtonFormField<int>(
+                        isExpanded: true,
+                        initialValue: _selectedYear,
+                        decoration: const InputDecoration(labelText: 'Year'),
+                        items: years
+                            .map(
+                              (year) => DropdownMenuItem(
+                                value: year,
+                                child: Text(
+                                  year.toString(),
+                                  style: const TextStyle(
+                                    color: AppColors.dashboardText,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
+                        onChanged: (value) {
+                          if (value == null) return;
+                          setState(() {
+                            _selectedYear = value;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 12,
+              runSpacing: 12,
               children: [
-                Expanded(
-                  child: DropdownButtonFormField<int>(
-                    isExpanded: true,
-                    initialValue: _selectedMonth,
-                    decoration: const InputDecoration(labelText: 'Month'),
-                    items: [
-                      for (int month = 1; month <= 12; month++)
-                        DropdownMenuItem(
-                          value: month,
-                          child: Text(
-                            _monthName(month),
-                            style: const TextStyle(color: AppColors.dashboardText),
-                          ),
-                        ),
-                    ],
-                    onChanged: (value) {
-                      if (value == null) return;
-                      setState(() {
-                        _selectedMonth = value;
-                      });
-                    },
+                SizedBox(
+                  width: 260,
+                  child: _ReportCard(
+                    title: 'Total Revenue',
+                    value: _currency(report.revenue),
+                    color: AppColors.dashboardAccent,
+                    icon: Icons.trending_up,
                   ),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: DropdownButtonFormField<int>(
-                    isExpanded: true,
-                    initialValue: _selectedYear,
-                    decoration: const InputDecoration(labelText: 'Year'),
-                    items: years
-                        .map(
-                          (year) => DropdownMenuItem(
-                            value: year,
-                            child: Text(
-                              year.toString(),
-                              style: const TextStyle(color: AppColors.dashboardText),
-                            ),
-                          ),
-                        )
-                        .toList(),
-                    onChanged: (value) {
-                      if (value == null) return;
-                      setState(() {
-                        _selectedYear = value;
-                      });
-                    },
+                SizedBox(
+                  width: 260,
+                  child: _ReportCard(
+                    title: 'Total Expenses',
+                    value: _currency(report.expenses),
+                    color: AppColors.dashboardAccent,
+                    icon: Icons.trending_down,
+                  ),
+                ),
+                SizedBox(
+                  width: 260,
+                  child: _ReportCard(
+                    title: 'Net Profit / Loss',
+                    value: _currency(report.net),
+                    color: AppColors.dashboardAccent,
+                    icon: report.net >= 0
+                        ? Icons.account_balance_wallet_outlined
+                        : Icons.warning_amber,
                   ),
                 ),
               ],
             ),
-          ),
-        ),
-        const SizedBox(height: 16),
-        Wrap(
-          spacing: 12,
-          runSpacing: 12,
-          children: [
-            SizedBox(
-              width: 260,
-              child: _ReportCard(
-                title: 'Total Revenue',
-                value: _currency(report.revenue),
-                color: AppColors.dashboardAccent,
-                icon: Icons.trending_up,
-              ),
-            ),
-            SizedBox(
-              width: 260,
-              child: _ReportCard(
-                title: 'Total Expenses',
-                value: _currency(report.expenses),
-                color: AppColors.dashboardAccent,
-                icon: Icons.trending_down,
-              ),
-            ),
-            SizedBox(
-              width: 260,
-              child: _ReportCard(
-                title: 'Net Profit / Loss',
-                value: _currency(report.net),
-                color: AppColors.dashboardAccent,
-                icon: report.net >= 0
-                    ? Icons.account_balance_wallet_outlined
-                    : Icons.warning_amber,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 24),
-        if (monthBookings.isNotEmpty) ...
-          [
-            _SectionTitle(
-              icon: Icons.hotel,
-              title: 'Bookings',
-              subtitle: 'Manage bookings for ${_monthName(_selectedMonth)} $_selectedYear',
-            ),
-            const SizedBox(height: 12),
-            ...monthBookings.map((booking) => Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                booking.name,
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.dashboardText,
-                                ),
-                              ),
-                              Text(
-                                booking.phone,
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: AppColors.dashboardText.withValues(alpha: 0.8),
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        Text(
-                          _currency(booking.totalAmount),
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.dashboardAccent,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Text(
-                          '${_formatDate(booking.checkIn)} to ${_formatDate(booking.checkOut)}',
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppColors.dashboardText.withValues(alpha: 0.8),
-                              ),
-                        ),
-                        IconButton(
-                          onPressed: () => _deleteBooking(booking),
-                          icon: const Icon(Icons.delete_outline, size: 18),
-                          tooltip: 'Delete booking',
-                          color: Theme.of(context).colorScheme.error,
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            )),
             const SizedBox(height: 24),
-          ]
-        else
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Center(
-              child: Text(
-                'No bookings for ${_monthName(_selectedMonth)} $_selectedYear',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.dashboardText.withValues(alpha: 0.8),
-                ),
+            if (monthBookings.isNotEmpty) ...[
+              _SectionTitle(
+                icon: Icons.hotel,
+                title: 'Bookings',
+                subtitle:
+                    'Manage bookings for ${_monthName(_selectedMonth)} $_selectedYear',
               ),
-            ),
-          ),
-        if (monthExpenses.isNotEmpty) ...
-          [
-            _SectionTitle(
-              icon: Icons.receipt_long,
-              title: 'Expenses',
-              subtitle: 'Manage expenses for ${_monthName(_selectedMonth)} $_selectedYear',
-            ),
-            const SizedBox(height: 12),
-            ...monthExpenses.map((expense) => Card(
-              margin: const EdgeInsets.only(bottom: 8),
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              const SizedBox(height: 12),
+              ...monthBookings.map(
+                (booking) => Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                expense.title,
-                                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                  color: AppColors.dashboardText,
-                                ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    booking.name,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.dashboardText,
+                                        ),
+                                  ),
+                                  Text(
+                                    booking.phone,
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: AppColors.dashboardText
+                                              .withValues(alpha: 0.8),
+                                        ),
+                                  ),
+                                ],
                               ),
-                              Text(
-                                expense.description,
-                                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                      color: AppColors.dashboardText.withValues(alpha: 0.8),
+                            ),
+                            Text(
+                              _currency(booking.totalAmount),
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.dashboardAccent,
+                                  ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              '${_formatDate(booking.checkIn)} to ${_formatDate(booking.checkOut)}',
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: AppColors.dashboardText.withValues(
+                                      alpha: 0.8,
                                     ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ],
-                          ),
-                        ),
-                        Text(
-                          _currency(expense.amount),
-                          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.dashboardAccent,
-                          ),
+                                  ),
+                            ),
+                            IconButton(
+                              onPressed: () => _deleteBooking(booking),
+                              icon: const Icon(Icons.delete_outline, size: 18),
+                              tooltip: 'Delete booking',
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 24),
+            ] else
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Center(
+                  child: Text(
+                    'No bookings for ${_monthName(_selectedMonth)} $_selectedYear',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.dashboardText.withValues(alpha: 0.8),
+                    ),
+                  ),
+                ),
+              ),
+            if (monthExpenses.isNotEmpty) ...[
+              _SectionTitle(
+                icon: Icons.receipt_long,
+                title: 'Expenses',
+                subtitle:
+                    'Manage expenses for ${_monthName(_selectedMonth)} $_selectedYear',
+              ),
+              const SizedBox(height: 12),
+              ...monthExpenses.map(
+                (expense) => Card(
+                  margin: const EdgeInsets.only(bottom: 8),
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(
-                          _formatDate(expense.date),
-                          style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                                color: AppColors.dashboardText.withValues(alpha: 0.8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    expense.title,
+                                    style: Theme.of(context)
+                                        .textTheme
+                                        .titleMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          color: AppColors.dashboardText,
+                                        ),
+                                  ),
+                                  Text(
+                                    expense.description,
+                                    style: Theme.of(context).textTheme.bodySmall
+                                        ?.copyWith(
+                                          color: AppColors.dashboardText
+                                              .withValues(alpha: 0.8),
+                                        ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ],
                               ),
+                            ),
+                            Text(
+                              _currency(expense.amount),
+                              style: Theme.of(context).textTheme.titleMedium
+                                  ?.copyWith(
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.dashboardAccent,
+                                  ),
+                            ),
+                          ],
                         ),
-                        IconButton(
-                          onPressed: () => _deleteExpense(expense),
-                          icon: const Icon(Icons.delete_outline, size: 18),
-                          tooltip: 'Delete expense',
-                          color: Theme.of(context).colorScheme.error,
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              _formatDate(expense.date),
+                              style: Theme.of(context).textTheme.bodySmall
+                                  ?.copyWith(
+                                    color: AppColors.dashboardText.withValues(
+                                      alpha: 0.8,
+                                    ),
+                                  ),
+                            ),
+                            IconButton(
+                              onPressed: () => _deleteExpense(expense),
+                              icon: const Icon(Icons.delete_outline, size: 18),
+                              tooltip: 'Delete expense',
+                              color: Theme.of(context).colorScheme.error,
+                            ),
+                          ],
                         ),
                       ],
                     ),
-                  ],
+                  ),
                 ),
               ),
-            )),
-          ]
-        else
-          Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16),
-            child: Center(
-              child: Text(
-                'No expenses for ${_monthName(_selectedMonth)} $_selectedYear',
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.dashboardText.withValues(alpha: 0.8),
+            ] else
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                child: Center(
+                  child: Text(
+                    'No expenses for ${_monthName(_selectedMonth)} $_selectedYear',
+                    style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                      color: AppColors.dashboardText.withValues(alpha: 0.8),
+                    ),
+                  ),
                 ),
               ),
-            ),
-          ),
           ],
         ),
       ),
@@ -2192,15 +2266,15 @@ class _SectionTitle extends StatelessWidget {
               Text(
                 title,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: AppColors.dashboardText,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  color: AppColors.dashboardText,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               Text(
                 subtitle,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.dashboardText.withValues(alpha: 0.8),
-                    ),
+                  color: AppColors.dashboardText.withValues(alpha: 0.8),
+                ),
               ),
             ],
           ),
@@ -2254,19 +2328,16 @@ class _ReadOnlyAmountCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(
-            label,
-            style: Theme.of(context).textTheme.bodySmall,
-          ),
+          Text(label, style: Theme.of(context).textTheme.bodySmall),
           const SizedBox(height: 6),
           Text(
             _currency(amount),
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w700,
-                  color: amount >= 0
-                      ? Theme.of(context).colorScheme.primary
-                      : Theme.of(context).colorScheme.error,
-                ),
+              fontWeight: FontWeight.w700,
+              color: amount >= 0
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.error,
+            ),
           ),
         ],
       ),
@@ -2291,16 +2362,16 @@ class _BookingMetaRow extends StatelessWidget {
             child: Text(
               '$label:',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    fontWeight: FontWeight.w600,
-                  ),
+              style: Theme.of(
+                context,
+              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
             ),
           ),
         ],
@@ -2324,12 +2395,12 @@ class _ReceiptRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final valueStyle = emphasize
         ? Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-              color: Theme.of(context).colorScheme.primary,
-            )
-        : Theme.of(context).textTheme.bodyMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            );
+            fontWeight: FontWeight.w700,
+            color: Theme.of(context).colorScheme.primary,
+          )
+        : Theme.of(
+            context,
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -2341,16 +2412,11 @@ class _ReceiptRow extends StatelessWidget {
             child: Text(
               '$label:',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
+                color: Theme.of(context).colorScheme.onSurfaceVariant,
+              ),
             ),
           ),
-          Expanded(
-            child: Text(
-              value,
-              style: valueStyle,
-            ),
-          ),
+          Expanded(child: Text(value, style: valueStyle)),
         ],
       ),
     );
@@ -2447,16 +2513,10 @@ class _FinancialSummaryBar extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text(
-              label,
-              style: TextStyle(color: textColor),
-            ),
+            Text(label, style: TextStyle(color: textColor)),
             Text(
               _currency(value),
-              style: TextStyle(
-                fontWeight: FontWeight.w700,
-                color: textColor,
-              ),
+              style: TextStyle(fontWeight: FontWeight.w700, color: textColor),
             ),
           ],
         ),
@@ -2511,9 +2571,9 @@ class _DashboardMetricCard extends StatelessWidget {
               Text(
                 label,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: textColor,
-                      fontWeight: FontWeight.w600,
-                    ),
+                  color: textColor,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),
@@ -2523,9 +2583,9 @@ class _DashboardMetricCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w800,
-                  color: textColor,
-                ),
+              fontWeight: FontWeight.w800,
+              color: textColor,
+            ),
           ),
         ],
       ),
@@ -2560,15 +2620,15 @@ class _DashboardSectionTitle extends StatelessWidget {
               Text(
                 title,
                 style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      color: AppColors.dashboardText,
-                      fontWeight: FontWeight.w700,
-                    ),
+                  color: AppColors.dashboardText,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
               Text(
                 subtitle,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: AppColors.dashboardText.withValues(alpha: 0.8),
-                    ),
+                  color: AppColors.dashboardText.withValues(alpha: 0.8),
+                ),
               ),
             ],
           ),
@@ -2610,8 +2670,8 @@ class _ReportCard extends StatelessWidget {
                   child: Text(
                     title,
                     style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: AppColors.dashboardText,
-                        ),
+                      color: AppColors.dashboardText,
+                    ),
                   ),
                 ),
               ],
@@ -2620,9 +2680,9 @@ class _ReportCard extends StatelessWidget {
             Text(
               value,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: color,
-                  ),
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
             ),
           ],
         ),

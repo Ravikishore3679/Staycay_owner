@@ -4,8 +4,8 @@ import 'package:google_sign_in/google_sign_in.dart';
 
 class AuthService {
   AuthService({FirebaseAuth? auth, GoogleSignIn? googleSignIn})
-      : _auth = auth ?? FirebaseAuth.instance,
-        _googleSignIn = googleSignIn ?? GoogleSignIn.instance;
+    : _auth = auth ?? FirebaseAuth.instance,
+      _googleSignIn = googleSignIn ?? GoogleSignIn.instance;
 
   final FirebaseAuth _auth;
   final GoogleSignIn _googleSignIn;
@@ -15,13 +15,39 @@ class AuthService {
     'GOOGLE_WEB_CLIENT_ID',
   );
 
-  Stream<User?> authStateChanges() => _auth.authStateChanges();
+  Stream<User?> authStateChanges() =>
+      _auth.authStateChanges().map(_normalizeUser);
 
-  User? get currentUser => _auth.currentUser;
+  User? get currentUser => _normalizeUser(_auth.currentUser);
+
+  bool get isSignedIn => currentUser != null;
+
+  Future<void> clearAnonymousSession() async {
+    if (_auth.currentUser?.isAnonymous ?? false) {
+      await _auth.signOut();
+    }
+  }
 
   Future<void> ensureSignedIn() async {
     if (_auth.currentUser != null) return;
     await _auth.signInAnonymously();
+  }
+
+  Future<void> signInWithEmail({
+    required String email,
+    required String password,
+  }) {
+    return _auth.signInWithEmailAndPassword(email: email, password: password);
+  }
+
+  Future<void> createAccountWithEmail({
+    required String email,
+    required String password,
+  }) {
+    return _auth.createUserWithEmailAndPassword(
+      email: email,
+      password: password,
+    );
   }
 
   Future<void> signInWithGoogle() async {
@@ -47,12 +73,48 @@ class AuthService {
     await _auth.signInWithCredential(credential);
   }
 
-  Future<void> signOutToAnonymous() async {
+  Future<ConfirmationResult> signInWithPhoneNumberWeb(String phoneNumber) {
+    return _auth.signInWithPhoneNumber(phoneNumber);
+  }
+
+  Future<void> verifyPhoneNumber({
+    required String phoneNumber,
+    required PhoneVerificationCompleted verificationCompleted,
+    required PhoneVerificationFailed verificationFailed,
+    required PhoneCodeSent codeSent,
+    required PhoneCodeAutoRetrievalTimeout codeAutoRetrievalTimeout,
+    int? forceResendingToken,
+  }) {
+    return _auth.verifyPhoneNumber(
+      phoneNumber: phoneNumber,
+      verificationCompleted: verificationCompleted,
+      verificationFailed: verificationFailed,
+      codeSent: codeSent,
+      codeAutoRetrievalTimeout: codeAutoRetrievalTimeout,
+      forceResendingToken: forceResendingToken,
+    );
+  }
+
+  Future<void> signInWithSmsCode({
+    required String verificationId,
+    required String smsCode,
+  }) {
+    final credential = PhoneAuthProvider.credential(
+      verificationId: verificationId,
+      smsCode: smsCode,
+    );
+    return _auth.signInWithCredential(credential);
+  }
+
+  Future<void> signInWithPhoneCredential(PhoneAuthCredential credential) {
+    return _auth.signInWithCredential(credential);
+  }
+
+  Future<void> signOut() async {
     if (!kIsWeb) {
       await _googleSignIn.signOut();
     }
     await _auth.signOut();
-    await _auth.signInAnonymously();
   }
 
   Future<void> _ensureGoogleSignInInitialized() async {
@@ -61,5 +123,13 @@ class AuthService {
       serverClientId: googleWebClientId.isEmpty ? null : googleWebClientId,
     );
     _googleSignInInitialized = true;
+  }
+
+  User? _normalizeUser(User? user) {
+    if (user?.isAnonymous ?? false) {
+      return null;
+    }
+
+    return user;
   }
 }

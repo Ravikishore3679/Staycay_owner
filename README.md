@@ -31,5 +31,23 @@ flutter run --dart-define=GOOGLE_WEB_CLIENT_ID=216680883540-apdshmsar7hhhvo9tfhj
 ```
 
 Without the Web Client ID and OAuth clients in `google-services.json`, Google Sign-In on Android cannot securely exchange tokens with Firebase Auth.
+
+## Firebase login providers
+
+The app now supports three Firebase Authentication entry points on the login screen:
+
+1. Google sign-in
+2. Email/password sign-in and account creation
+3. SMS OTP sign-in with a phone number in international format such as `+15551234567`
+
+Before testing the screen, enable the providers you need in Firebase Console under Authentication > Sign-in method:
+
+1. Turn on `Google`.
+2. Turn on `Email/Password`.
+3. Turn on `Phone` and add test phone numbers for local development when possible.
+
+Phone authentication also requires platform-level verification setup from Firebase, including valid app signatures for Android and APNs configuration for iOS.
 //flutter run -d 00008110-001545200C05801E --dart-define=GOOGLE_WEB_CLIENT_ID=216680883540-apdshmsar7hhhvo9tfhjvr66a4hdokb9.apps.googleusercontent.com
 //flutter run -d 9F832C20-6CB5-42D4-80F9-3555F259E7C2 --dart-define=GOOGLE_WEB_CLIENT_ID=216680883540-apdshmsar7hhhvo9tfhjvr66a4hdokb9.apps.googleusercontent.com
+
+dart run bin/deploy.dart

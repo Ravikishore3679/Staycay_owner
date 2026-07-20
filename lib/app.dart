@@ -4,6 +4,7 @@ import 'data/repositories/firestore_registry_repository.dart';
 import 'presentation/theme/app_colors.dart';
 import 'presentation/viewmodels/auth_view_model.dart';
 import 'presentation/viewmodels/registry_view_model.dart';
+import 'presentation/views/login_screen.dart';
 import 'presentation/views/registry_home_page.dart';
 import 'services/auth_service.dart';
 
@@ -27,6 +28,18 @@ class _GuestHouseRegistryAppState extends State<GuestHouseRegistryApp> {
       repository: FirestoreRegistryRepository(),
     );
     _authViewModel = AuthViewModel(authService: AuthService());
+    _authViewModel.startListening(
+      onUserChanged: (_) {
+        _registryViewModel.loadData();
+      },
+    );
+  }
+
+  @override
+  void dispose() {
+    _authViewModel.dispose();
+    _registryViewModel.dispose();
+    super.dispose();
   }
 
   @override
@@ -48,18 +61,31 @@ class _GuestHouseRegistryAppState extends State<GuestHouseRegistryApp> {
         cardTheme: CardThemeData(
           elevation: 0,
           color: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
         ),
       ),
-      home: RegistryHomePage(
-        guestHouseName: _guestHouseName,
-        onGuestHouseNameChanged: (value) {
-          setState(() {
-            _guestHouseName = value;
-          });
+      home: AnimatedBuilder(
+        animation: _authViewModel,
+        builder: (context, _) {
+          final user = _authViewModel.user;
+
+          if (user == null) {
+            return LoginScreen(authViewModel: _authViewModel);
+          }
+
+          return RegistryHomePage(
+            guestHouseName: _guestHouseName,
+            onGuestHouseNameChanged: (value) {
+              setState(() {
+                _guestHouseName = value;
+              });
+            },
+            registryViewModel: _registryViewModel,
+            authViewModel: _authViewModel,
+          );
         },
-        registryViewModel: _registryViewModel,
-        authViewModel: _authViewModel,
       ),
     );
   }

@@ -7,9 +7,7 @@ import 'services/auth_service.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-    options: DefaultFirebaseOptions.currentPlatform,
-  );
-  await AuthService().ensureSignedIn();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+  await AuthService().clearAnonymousSession();
   runApp(const GuestHouseRegistryApp());
 }
