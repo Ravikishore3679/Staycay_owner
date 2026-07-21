@@ -18,6 +18,16 @@ class RegistryViewModel extends ChangeNotifier {
   String? _errorMessage;
   StreamSubscription<List<Booking>>? _bookingsSub;
   StreamSubscription<List<Expense>>? _expensesSub;
+  Timer? _debounceTimer;
+
+  // Cache for computed values
+  List<Booking>? _cachedSortedBookings;
+  List<Expense>? _cachedSortedExpenses;
+  List<Booking>? _cachedUpcomingBookings;
+  double? _cachedTotalRevenue;
+  double? _cachedTotalExpenditure;
+  final Map<String, List<Booking>> _cachedBookingsByMonth = {};
+  final Map<String, List<Expense>> _cachedExpensesByMonth = {};
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
@@ -42,16 +52,21 @@ class RegistryViewModel extends ChangeNotifier {
 
         _bookings = initial[0] as List<Booking>;
         _expenses = initial[1] as List<Expense>;
+        _invalidateAllCaches();
       } catch (_) {
         _bookings = [];
         _expenses = [];
+        _invalidateAllCaches();
       }
 
       _bookingsSub = bookingsStream.listen(
         (bookings) {
-          _bookings = bookings;
-          _errorMessage = null;
-          notifyListeners();
+          _debounceUpdate(() {
+            _bookings = bookings;
+            _invalidateAllCaches();
+            _errorMessage = null;
+            notifyListeners();
+          });
         },
         onError: (Object e) {
           if (e.toString().contains('permission-denied')) {
@@ -65,9 +80,12 @@ class RegistryViewModel extends ChangeNotifier {
 
       _expensesSub = expensesStream.listen(
         (expenses) {
-          _expenses = expenses;
-          _errorMessage = null;
-          notifyListeners();
+          _debounceUpdate(() {
+            _expenses = expenses;
+            _invalidateAllCaches();
+            _errorMessage = null;
+            notifyListeners();
+          });
         },
         onError: (Object e) {
           if (e.toString().contains('permission-denied')) {
@@ -90,17 +108,40 @@ class RegistryViewModel extends ChangeNotifier {
     }
   }
 
+  /// Debounce rapid stream updates to reduce rebuild frequency
+  void _debounceUpdate(VoidCallback update) {
+    _debounceTimer?.cancel();
+    _debounceTimer = Timer(const Duration(milliseconds: 200), update);
+  }
+
+  /// Invalidate all caches when data changes
+  void _invalidateAllCaches() {
+    _cachedSortedBookings = null;
+    _cachedSortedExpenses = null;
+    _cachedUpcomingBookings = null;
+    _cachedTotalRevenue = null;
+    _cachedTotalExpenditure = null;
+    _cachedBookingsByMonth.clear();
+    _cachedExpensesByMonth.clear();
+  }
+
   List<Booking> get bookings {
-    final sorted = [..._bookings]..sort((a, b) => b.checkIn.compareTo(a.checkIn));
-    return sorted;
+    _cachedSortedBookings ??=
+        ([..._bookings]..sort((a, b) => b.checkIn.compareTo(a.checkIn)));
+    return _cachedSortedBookings!;
   }
 
   List<Expense> get expenses {
-    final sorted = [..._expenses]..sort((a, b) => b.date.compareTo(a.date));
-    return sorted;
+    _cachedSortedExpenses ??=
+        ([..._expenses]..sort((a, b) => b.date.compareTo(a.date)));
+    return _cachedSortedExpenses!;
   }
 
   List<Booking> get topUpcomingBookings {
+    if (_cachedUpcomingBookings != null) {
+      return _cachedUpcomingBookings!;
+    }
+
     final today = DateUtils.dateOnly(DateTime.now());
     final upcoming = _bookings
         .where((b) =>
@@ -109,28 +150,68 @@ class RegistryViewModel extends ChangeNotifier {
         .toList()
       ..sort((a, b) => a.checkIn.compareTo(b.checkIn));
 
-    return upcoming.take(3).toList();
+    _cachedUpcomingBookings = upcoming.take(3).toList();
+    return _cachedUpcomingBookings!;
   }
 
   List<Booking> bookingsForMonth(int year, int month) {
-    return _bookings
+    final cacheKey = '$year-$month';
+    if (_cachedBookingsByMonth.containsKey(cacheKey)) {
+      return _cachedBookingsByMonth[cacheKey]!;
+    }
+
+    final result = _bookings
         .where((b) => b.checkIn.year == year && b.checkIn.month == month)
         .toList()
       ..sort((a, b) => b.checkIn.compareTo(a.checkIn));
+
+    _cachedBookingsByMonth[cacheKey] = result;
+    return result;
   }
 
   List<Expense> expensesForMonth(int year, int month) {
-    return _expenses
+    final cacheKey = '$year-$month';
+    if (_cachedExpensesByMonth.containsKey(cacheKey)) {
+      return _cachedExpensesByMonth[cacheKey]!;
+    }
+
+    final result = _expenses
         .where((e) => e.date.year == year && e.date.month == month)
         .toList()
       ..sort((a, b) => b.date.compareTo(a.date));
+
+    _cachedExpensesByMonth[cacheKey] = result;
+    return result;
   }
 
-  double get totalRevenue =>
-      _bookings.fold(0.0, (total, booking) => total + booking.totalAmount);
+  double get totalRevenue {
+    _cachedTotalRevenue ??=
+        _bookings.fold(0.0, (total, booking) => total! + booking.totalAmount);
+    return _cachedTotalRevenue!;
+  }
 
-  double get totalExpenditure =>
-      _expenses.fold(0.0, (total, exp) => total + exp.amount);
+  double get totalExpenditure {
+    _cachedTotalExpenditure ??=
+        _expenses.fold(0.0, (total, exp) => total! + exp.amount);
+    return _cachedTotalExpenditure!;
+  }
+
+  MonthlyReport getMonthlyReport(int year, int month) {
+    final monthBookings = bookingsForMonth(year, month);
+    final monthExpenses = expensesForMonth(year, month);
+
+    final revenue =
+        monthBookings.fold(0.0, (total, booking) => total + booking.totalAmount);
+    final expenses =
+        monthExpenses.fold(0.0, (total, expense) => total + expense.amount);
+
+    return MonthlyReport(
+      year: year,
+      month: month,
+      revenue: revenue,
+      expenses: expenses,
+    );
+  }
 
   Future<void> addBooking(Booking booking) async {
     try {
@@ -198,33 +279,11 @@ class RegistryViewModel extends ChangeNotifier {
     }
   }
 
-  MonthlyReport getMonthlyReport(int year, int month) {
-    final monthlyRevenue = _bookings.fold<double>(0.0, (total, b) {
-      if (b.checkIn.year == year && b.checkIn.month == month) {
-        return total + b.totalAmount;
-      }
-      return total;
-    });
-
-    final monthlyExpenses = _expenses.fold<double>(0.0, (total, e) {
-      if (e.date.year == year && e.date.month == month) {
-        return total + e.amount;
-      }
-      return total;
-    });
-
-    return MonthlyReport(
-      year: year,
-      month: month,
-      revenue: monthlyRevenue,
-      expenses: monthlyExpenses,
-    );
-  }
-
   @override
   void dispose() {
     _bookingsSub?.cancel();
     _expensesSub?.cancel();
+    _debounceTimer?.cancel();
     super.dispose();
   }
 }

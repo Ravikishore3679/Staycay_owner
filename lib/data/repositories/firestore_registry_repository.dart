@@ -28,7 +28,13 @@ class FirestoreRegistryRepository implements RegistryRepository {
   @override
   Stream<List<Booking>> watchBookings() {
     final uid = _currentUid();
-    return _bookingsCollection(uid).snapshots().map(
+    // Optimize: Order by checkIn descending and limit to 500 documents
+    // This reduces initial load time and network bandwidth
+    return _bookingsCollection(uid)
+        .orderBy('checkIn', descending: true)
+        .limit(500)
+        .snapshots()
+        .map(
           (snapshot) =>
               snapshot.docs.map((doc) => Booking.fromMap(doc.id, doc.data())).toList(),
         );
@@ -37,7 +43,13 @@ class FirestoreRegistryRepository implements RegistryRepository {
   @override
   Stream<List<Expense>> watchExpenses() {
     final uid = _currentUid();
-    return _expensesCollection(uid).snapshots().map(
+    // Optimize: Order by date descending and limit to 500 documents
+    // This reduces initial load time and network bandwidth
+    return _expensesCollection(uid)
+        .orderBy('date', descending: true)
+        .limit(500)
+        .snapshots()
+        .map(
           (snapshot) =>
               snapshot.docs.map((doc) => Expense.fromMap(doc.id, doc.data())).toList(),
         );
