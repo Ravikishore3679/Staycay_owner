@@ -37,15 +37,34 @@ void main() async {
   );
   await pubspecFile.writeAsString(updatedContent);
 
-  print("🧹 Cleaning local workspace caches...");
-  await runCommand('flutter', ['clean']);
+ // print("🧹 Cleaning local workspace caches...");
+ // await runCommand('flutter', ['clean']);
+  //await runCommand('flutter', ['pub', 'get']);
+print("🧹 Cleaning local Android build artifacts manually...");
+  // ⚡ This targets and clears only the Android build directory safely
+  final buildDir = Directory('build/app');
+  if (await buildDir.exists()) {
+    await buildDir.delete(recursive: true);
+  }
+
+  print("📦 Fetching dependencies...");
   await runCommand('flutter', ['pub', 'get']);
 
-  print("📦 Generating signed compilation binary...");
+  //print("📦 Generating signed compilation binary...");
   // Automatically attaches your structural environment mapping properties
-  await runCommand('flutter', [
-    'build', 'apk', '--release', '--dart-define-from-file=.env'
-  ]);
+  //await runCommand('flutter', [
+   // 'build', 'apk', '--release', '--dart-define-from-file=.env'
+ // ]);
+
+//  AFTER (Slices your APK size by up to 60%)
+
+print("📦 Generating signed compilation binary...");
+await runCommand('flutter', [
+  'build', 'apk', 
+  '--release', 
+  '--split-per-abi', // ⚡ Splits the single giant APK into 3 small, optimized APKs
+  '--dart-define-from-file=.env'
+]);
 
   // Read release details interactively via the standard terminal pipe stream
   stdout.write("\n📝 Enter release notes for testers (Press Enter to finish): ");
@@ -54,7 +73,7 @@ void main() async {
   print("📤 Uploading binary artifact straight to Firebase App Distribution pipeline...");
   await runCommand('firebase', [
     'appdistribution:distribute',
-    'build/app/outputs/flutter-apk/app-release.apk',
+    'build/app/outputs/flutter-apk/app-arm64-v8a-release.apk',
     '--app', firebaseAppId,
     '--groups', testerGroups,
     '--release-notes', releaseNotes ?? 'Automated Flutter Engine Deployment'
