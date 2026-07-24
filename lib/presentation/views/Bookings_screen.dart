@@ -381,6 +381,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                       TextFormField(
                         controller: nameCtrl,
                         textCapitalization: TextCapitalization.words,
+                        style: const TextStyle(color: AppColors.dashboardText),
                         decoration: const InputDecoration(labelText: 'Name'),
                         validator: (value) {
                           final v = value?.trim() ?? '';
@@ -399,6 +400,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                           FilteringTextInputFormatter.digitsOnly,
                           LengthLimitingTextInputFormatter(10),
                         ],
+                        style: const TextStyle(color: AppColors.dashboardText),
                         decoration: const InputDecoration(labelText: 'Phone'),
                         validator: (value) {
                           final v = value?.trim() ?? '';
@@ -415,6 +417,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                           FilteringTextInputFormatter.digitsOnly,
                           LengthLimitingTextInputFormatter(12),
                         ],
+                        style: const TextStyle(color: AppColors.dashboardText),
                         decoration: const InputDecoration(labelText: 'Aadhaar'),
                         validator: (value) {
                           final v = value?.trim() ?? '';
@@ -453,6 +456,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                           FilteringTextInputFormatter.digitsOnly,
                           LengthLimitingTextInputFormatter(2),
                         ],
+                        style: const TextStyle(color: AppColors.dashboardText),
                         decoration: const InputDecoration(
                           labelText: 'No. of Guests',
                         ),
@@ -469,6 +473,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
+                        style: const TextStyle(color: AppColors.dashboardText),
                         decoration: const InputDecoration(
                           labelText: 'Total Amount',
                         ),
@@ -486,6 +491,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
+                        style: const TextStyle(color: Color.fromARGB(255, 47, 32, 8)),
                         decoration: const InputDecoration(
                           labelText: 'Advance Paid',
                         ),
@@ -593,7 +599,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
     return Theme(
       data: nightTheme,
       child: Container(
-        color: AppColors.dashboardCanvas,
+        color: Color(0xFF0A1D21),
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
@@ -613,6 +619,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                       TextFormField(
                         controller: _nameCtrl,
                         textCapitalization: TextCapitalization.words,
+                        style: const TextStyle(color: AppColors.dashboardText),
                         decoration: const InputDecoration(
                           labelText: 'Name',
                           hintText: 'Guest full name',
@@ -635,6 +642,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                           FilteringTextInputFormatter.digitsOnly,
                           LengthLimitingTextInputFormatter(10),
                         ],
+                        style: const TextStyle(color: AppColors.dashboardText),
                         decoration: const InputDecoration(
                           labelText: 'Phone',
                           hintText: '10-digit mobile number',
@@ -655,6 +663,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                           FilteringTextInputFormatter.digitsOnly,
                           LengthLimitingTextInputFormatter(12),
                         ],
+                        style: const TextStyle(color: AppColors.dashboardText),
                         decoration: const InputDecoration(
                           labelText: 'Aadhaar',
                           hintText: '12-digit Aadhaar number',
@@ -696,6 +705,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                             child: TextFormField(
                               controller: _guestsCtrl,
                               keyboardType: TextInputType.number,
+                              style: const TextStyle(color: AppColors.dashboardText),
                               inputFormatters: [
                                 FilteringTextInputFormatter.digitsOnly,
                                 LengthLimitingTextInputFormatter(2),
@@ -722,6 +732,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                                   const TextInputType.numberWithOptions(
                                     decimal: true,
                                   ),
+                              style: const TextStyle(color: AppColors.dashboardText),
                               decoration: const InputDecoration(
                                 labelText: 'Total Amount',
                                 prefixText: 'Rs ',
@@ -749,6 +760,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                                   const TextInputType.numberWithOptions(
                                     decimal: true,
                                   ),
+                              style: const TextStyle(color: AppColors.dashboardText),
                               decoration: const InputDecoration(
                                 labelText: 'Advance Paid',
                                 prefixText: 'Rs ',
@@ -892,18 +904,19 @@ class _BookingsScreenState extends State<BookingsScreen> {
                     childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
                     leading: CircleAvatar(
                       backgroundColor: booking.isUpcoming
-                          ? AppColors.upcomingIndicator
+                          ? const Color.fromARGB(255, 209, 225, 215)
                           : AppColors.historyIndicator,
                       child: Icon(
                         booking.isUpcoming
                             ? Icons.event_available
                             : Icons.history,
                         color: booking.isUpcoming
-                            ? AppColors.revenueBar
-                            : AppColors.historyIcon,
+                            ? const Color.fromARGB(255, 10, 52, 6)
+                            : const Color.fromARGB(255, 10, 52, 6),
                       ),
                     ),
                     title: Text(booking.name),
+                    
                     subtitle: Text(
                       '${_formatDate(booking.checkIn)}  ->  ${_formatDate(booking.checkOut)}',
                     ),
@@ -913,20 +926,27 @@ class _BookingsScreenState extends State<BookingsScreen> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
+                    
                     children: [
-                      _BookingMetaRow(label: 'Phone', value: booking.phone),
-                      _BookingMetaRow(label: 'Aadhaar', value: booking.aadhaar),
+                      _BookingMetaRow(label: 'Phone', value: booking.phone, labelColor: AppColors.dashboardText, valueColor: AppColors.dashboardText),
+                      _BookingMetaRow(label: 'Aadhaar', value: booking.aadhaar, labelColor: AppColors.dashboardText, valueColor: AppColors.dashboardText),
                       _BookingMetaRow(
                         label: 'Guests',
                         value: booking.guests.toString(),
+                        labelColor: AppColors.dashboardText,
+                        valueColor: AppColors.dashboardText,
                       ),
                       _BookingMetaRow(
                         label: 'Advance Paid',
                         value: _currency(booking.advancePaid),
+                        labelColor: AppColors.dashboardText,
+                        valueColor: AppColors.dashboardText,
                       ),
                       _BookingMetaRow(
                         label: 'Remaining',
                         value: _currency(booking.remainingAmount),
+                        labelColor: AppColors.dashboardText,
+                        valueColor: AppColors.dashboardText,
                       ),
                       const SizedBox(height: 10),
                       Row(

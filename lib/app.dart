@@ -52,6 +52,10 @@ class _GuestHouseRegistryAppState extends State<GuestHouseRegistryApp> {
         colorScheme: ColorScheme.fromSeed(
           seedColor: AppColors.brandPrimary,
           brightness: Brightness.light,
+        ).copyWith(
+          primary: AppColors.brandPrimary,
+          surface: AppColors.dashboardCard,
+          onSurface: AppColors.dashboardText,
         ),
         scaffoldBackgroundColor: AppColors.appBackground,
         inputDecorationTheme: const InputDecorationTheme(
@@ -60,7 +64,7 @@ class _GuestHouseRegistryAppState extends State<GuestHouseRegistryApp> {
         ),
         cardTheme: CardThemeData(
           elevation: 0,
-          color: Colors.white,
+          color: AppColors.dashboardCard,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),

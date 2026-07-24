@@ -40,9 +40,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color.fromARGB(255, 151, 152, 172),
-                  Color.fromARGB(255, 48, 11, 104),
-                  Color.fromARGB(255, 145, 129, 175),
+                  Color(0xFFF4C47C),
+                  Color(0xFFE1ECEE),
+                   Color(0xFF0A1D21),
                 ],
               ),
             ),
@@ -66,7 +66,7 @@ class _LoginScreenState extends State<LoginScreen> {
   child: ShaderMask(
     // Creates a colorful gradient effect across the text
     shaderCallback: (bounds) => const LinearGradient(
-      colors: [Colors.purple, Colors.pink, Colors.orange],
+      colors: [Color.fromARGB(255, 139, 94, 65), Color(0xFFC0392B), Color(0xFF2E7D32)],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ).createShader(bounds),
@@ -85,7 +85,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               textAlign: TextAlign.center,
                               'Sign in with your Google account',
                               style: theme.textTheme.bodyMedium?.copyWith(
-                                color: const Color.fromARGB(135, 0, 0, 0),
+                                color: const Color.fromARGB(255, 233, 229, 227),
                                 height: 1.4,
                               ),
                             ),

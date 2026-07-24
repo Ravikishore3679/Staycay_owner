@@ -301,6 +301,10 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                     title: Text(expense.title),
                     subtitle: Text(
                       '${expense.description}\n${_formatDate(expense.date)}',
+                     style: const TextStyle(
+                      color: AppColors.dashboardText, // Unified soft marine layout color
+                       fontSize: 14,
+                      ),
                     ),
                     isThreeLine: true,
                     trailing: SizedBox(

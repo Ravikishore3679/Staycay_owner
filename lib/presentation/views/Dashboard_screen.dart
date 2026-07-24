@@ -33,9 +33,9 @@ class DashboardScreen extends StatelessWidget {
                   label: 'Revenue',
                   value: _currency(revenue),
                   icon: Icons.trending_up,
-                  color: AppColors.dashboardAccent,
-                  cardColor: const Color.fromARGB(255, 20, 85, 45),
-                  textColor: AppColors.dashboardText,
+                  color: const Color.fromARGB(255, 13, 56, 10),
+                  cardColor: const Color.fromARGB(255, 26, 163, 63),
+                  textColor: const Color.fromARGB(255, 13, 56, 10),
                 ),
               ),
               const SizedBox(width: 12),
@@ -44,46 +44,46 @@ class DashboardScreen extends StatelessWidget {
                   label: 'Expenditure',
                   value: _currency(expense),
                   icon: Icons.trending_down,
-                  color: AppColors.dashboardAccent,
-                  cardColor: const Color.fromARGB(255, 197, 53, 34),
-                  textColor: AppColors.dashboardText,
+                  color: const Color.fromARGB(255, 57, 13, 8),
+                  cardColor: const Color.fromARGB(255, 206, 36, 36),
+                  textColor: const Color.fromARGB(255, 57, 13, 8),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 13),
           Card(
-            color: AppColors.dashboardCard,
+            color: const Color(0xFF1B3F47),
             child: Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _FinancialSummaryBar(
-                    label: 'Revenue',
+                    label: 'Revenue', // bold
                     value: revenue,
                     max: progressMax,
-                    color: const Color.fromARGB(255, 36, 162, 84),
+                    color: const Color.fromARGB(255, 26, 163, 63),
                     textColor: AppColors.dashboardText,
+                    
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 13),
                   _FinancialSummaryBar(
                     label: 'Expenditure',
                     value: expense,
                     max: progressMax,
-                    color: const Color.fromARGB(255, 197, 53, 34),
-                    textColor: AppColors.dashboardText,
+                    color:  const Color.fromARGB(255, 206, 36, 36),
+                    textColor:AppColors.dashboardText,
                   ),
                   const SizedBox(height: 14),
                   Container(
                     width: double.infinity,
                     padding: const EdgeInsets.all(12),
                     decoration: BoxDecoration(
-                      color: const Color.fromARGB(255, 46, 46, 79),
+                      color: AppColors.dashboardCard,
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: const Color.fromARGB(255, 200, 230, 211)
-                            .withValues(alpha: 0.45),
+                        color: AppColors.dashboardAccent.withValues(alpha: 0.28),
                       ),
                     ),
                     child: Row(
@@ -92,7 +92,7 @@ class DashboardScreen extends StatelessWidget {
                           net >= 0
                               ? Icons.savings_outlined
                               : Icons.warning_amber_rounded,
-                          color: AppColors.dashboardAccent,
+                          color:AppColors.dashboardText,
                         ),
                         const SizedBox(width: 8),
                         Expanded(
@@ -123,14 +123,14 @@ class DashboardScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: AppColors.dashboardCard,
+                color: const Color(0xFF1B3F47),
                 borderRadius: BorderRadius.circular(16),
               ),
               child: Row(
                 children: [
                   Icon(
                     Icons.inbox_outlined,
-                    color: AppColors.dashboardText.withValues(alpha: 0.8),
+                    color: const Color.fromARGB(255, 193, 198, 206).withValues(alpha: 0.8),
                   ),
                   const SizedBox(width: 10),
                   Text(
@@ -145,10 +145,10 @@ class DashboardScreen extends StatelessWidget {
           else
             ...upcoming.map(
               (booking) => Card(
-                color: AppColors.dashboardCard,
+                color: const Color(0xFF1B3F47),
                 child: ListTile(
                   leading: CircleAvatar(
-                    backgroundColor: AppColors.dashboardAccent.withValues(
+                    backgroundColor: const Color.fromARGB(255, 63, 161, 183).withValues(
                       alpha: 0.2,
                     ),
                     child: Text(
@@ -170,7 +170,7 @@ class DashboardScreen extends StatelessWidget {
                     _currency(booking.totalAmount),
                     style: Theme.of(context).textTheme.titleSmall?.copyWith(
                       fontWeight: FontWeight.w700,
-                      color: AppColors.dashboardAccent,
+                      color: AppColors.dashboardText,
                     ),
                   ),
                 ),

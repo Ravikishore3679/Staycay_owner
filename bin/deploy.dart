@@ -66,10 +66,8 @@ await runCommand('flutter', [
   '--dart-define-from-file=.env'
 ]);
 
-  // Read release details interactively via the standard terminal pipe stream
-  stdout.write("\n📝 Enter release notes for testers (Press Enter to finish): ");
-  final String? releaseNotes = stdin.readLineSync(encoding: utf8);
-
+  final String releaseNotes = "Version: $nextFullVersion\n\nChanges:\ncommitdetails: ${Platform.environment['GITHUB_SHA'] ?? 'N/A'}\n\nAutomated Flutter Engine Deployment via deploy.dart script.";
+  
   print("📤 Uploading binary artifact straight to Firebase App Distribution pipeline...");
   await runCommand('firebase', [
     'appdistribution:distribute',

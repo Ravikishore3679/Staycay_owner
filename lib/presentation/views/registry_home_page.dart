@@ -154,11 +154,11 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
 
         return Scaffold(
           appBar: AppBar(
-            backgroundColor: Color.fromARGB(255, 5, 47, 54),
-            foregroundColor: AppColors.dashboardText,
+            backgroundColor: AppColors.dashboardAccent,
+            foregroundColor: AppColors.dashboardCanvas,
             title: Text(widget.guestHouseName),
             titleTextStyle: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: AppColors.dashboardText,
+              color: AppColors.dashboardCanvas,
               fontWeight: FontWeight.w700,
             ),
             centerTitle: false,
@@ -223,7 +223,7 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
                         child: Text(
                           avatarText,
                           style: const TextStyle(
-                            color: AppColors.dashboardText,
+                            color: AppColors.dashboardCanvas,
                           ),
                         ),
                       ),
@@ -272,16 +272,16 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
           ),
           bottomNavigationBar: NavigationBarTheme(
             data: NavigationBarThemeData(
-              backgroundColor: Color.fromARGB(255, 5, 47, 54),
-              indicatorColor: AppColors.dashboardAccent.withValues(alpha: 0.22),
+              backgroundColor: AppColors.dashboardAccent,
+              indicatorColor: AppColors.dashboardCard,
               labelTextStyle: WidgetStateProperty.resolveWith<TextStyle?>((
                 states,
               ) {
                 final isSelected = states.contains(WidgetState.selected);
                 return TextStyle(
                   color: isSelected
-                      ? AppColors.dashboardAccent
-                      : AppColors.dashboardText.withValues(alpha: 0.85),
+                      ? AppColors.dashboardCanvas
+                      : AppColors.dashboardCanvas.withValues(alpha: 0.85),
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 );
               }),
@@ -291,8 +291,8 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
                 final isSelected = states.contains(WidgetState.selected);
                 return IconThemeData(
                   color: isSelected
-                      ? AppColors.dashboardAccent
-                      : AppColors.dashboardText.withValues(alpha: 0.85),
+                      ? AppColors.dashboardCanvas
+                      : AppColors.dashboardCanvas.withValues(alpha: 0.85),
                   size: 20,
                 );
               }),
@@ -445,10 +445,17 @@ class _ReadOnlyAmountCard extends StatelessWidget {
 }
 
 class _BookingMetaRow extends StatelessWidget {
-  const _BookingMetaRow({required this.label, required this.value});
+  const _BookingMetaRow({
+    required this.label,
+    required this.value,
+    required this.labelColor,
+    required this.valueColor,
+  });
 
   final String label;
   final String value;
+  final Color labelColor;
+  final Color valueColor;
 
   @override
   Widget build(BuildContext context) {
@@ -461,16 +468,17 @@ class _BookingMetaRow extends StatelessWidget {
             child: Text(
               '$label:',
               style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
+                color: labelColor,
               ),
             ),
           ),
           Expanded(
             child: Text(
               value,
-              style: Theme.of(
-                context,
-              ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600),
+              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+                color: valueColor,
+              ),
             ),
           ),
         ],
@@ -571,11 +579,12 @@ ThemeData _nightTabTheme(BuildContext context) {
       displayColor: AppColors.dashboardText,
     ),
     inputDecorationTheme: base.inputDecorationTheme.copyWith(
-      labelStyle: const TextStyle(color: Colors.white70),
-      hintStyle: const TextStyle(color: Colors.white54),
-      prefixIconColor: Colors.white70,
+      labelStyle: const TextStyle(color: AppColors.dashboardText),
+      hintStyle: TextStyle(color: AppColors.dashboardText.withValues(alpha: 0.7)),
+      prefixIconColor: AppColors.dashboardText,
+      suffixIconColor: AppColors.dashboardText,
       enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.25)),
+        borderSide: BorderSide(color: AppColors.dashboardAccent.withValues(alpha: 0.35)),
       ),
       focusedBorder: const OutlineInputBorder(
         borderSide: BorderSide(color: AppColors.dashboardAccent),
@@ -709,7 +718,7 @@ class _DashboardSectionTitle extends StatelessWidget {
       children: [
         CircleAvatar(
           backgroundColor: AppColors.dashboardAccent.withValues(alpha: 0.2),
-          child: Icon(icon, color: AppColors.dashboardAccent),
+          child: Icon(icon, color: const Color.fromARGB(149, 242, 241, 237)),
         ),
         const SizedBox(width: 12),
         Expanded(
