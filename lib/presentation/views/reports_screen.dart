@@ -28,6 +28,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         title: const Text('Delete Booking'),
         content: Text(
           'Are you sure you want to delete the booking for ${booking.name}?',
+          style: const TextStyle(color: Color(0xFF0A1D21)),
         ),
         actions: [
           TextButton(
@@ -66,7 +67,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
       context: context,
       builder: (context) => AlertDialog(
         title: const Text('Delete Expense'),
-        content: Text('Are you sure you want to delete "${expense.title}"?'),
+        content: Text(
+          'Are you sure you want to delete "${expense.title}"?',
+          style: const TextStyle(color: Color(0xFF0A1D21)),
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),

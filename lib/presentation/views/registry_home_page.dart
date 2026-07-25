@@ -49,6 +49,7 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
     final controller = TextEditingController(text: widget.guestHouseName);
 
     final newName = await showDialog<String>(
+
       context: context,
       builder: (dialogContext) {
         final formKey = GlobalKey<FormState>();
@@ -61,7 +62,11 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
               controller: controller,
               autofocus: true,
               textCapitalization: TextCapitalization.words,
-              decoration: const InputDecoration(labelText: 'Guest house name'),
+              style: const TextStyle(color: Color(0xFF0A1D21)),
+              decoration: const InputDecoration(
+                labelText: 'Guest house name',
+                labelStyle: TextStyle(color: Color(0xFF0A1D21)),
+              ),
               validator: (value) {
                 final text = value?.trim() ?? '';
                 if (text.isEmpty) return 'Guest house name is required';
@@ -165,8 +170,10 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
             surfaceTintColor: Colors.transparent,
             actions: [
               IconButton(
+              
                 onPressed: _editGuestHouseName,
                 tooltip: 'Edit guest house name',
+                
                 icon: const Icon(Icons.edit_outlined, size: 20),
               ),
               StreamBuilder<User?>(
@@ -189,6 +196,7 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
                       : displayName[0].toUpperCase();
 
                   return PopupMenuButton<String>(
+                    color: const Color(0xFF0A1D21),
                     tooltip: 'Account',
                     onSelected: (value) {
                       if (value == 'signin') {

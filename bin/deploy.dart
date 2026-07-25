@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:yaml/yaml.dart';
 
@@ -66,15 +65,36 @@ await runCommand('flutter', [
   '--dart-define-from-file=.env'
 ]);
 
-  final String releaseNotes = "Version: $nextFullVersion\n\nChanges:\ncommitdetails: ${Platform.environment['GITHUB_SHA'] ?? 'N/A'}\n\nAutomated Flutter Engine Deployment via deploy.dart script.";
-  
+ // Extract metadata dynamically from environment variables or use fallback strings
+  final String commitSha = Platform.environment['GITHUB_SHA'] ?? 'N/A';
+  final String branchName = Platform.environment['GITHUB_REF_NAME'] ?? 'master';
+  final String actor = Platform.environment['GITHUB_ACTOR'] ?? 'Automated Script';
+  final String currentTime = DateTime.now().toUtc().toIso8601String();
+
+  // Create the formatted release notes string exactly matching your visual layout
+  final String releaseNotes = '''
+🚀 Multi-Environment Build #15
+
+🌍 Environment: development
+📱 Version: $nextFullVersion
+
+📝 Build Type: 🔓 Development/Testing (All Environments)
+🔄 Runtime Switching: Enabled (Flexibility)
+
+📋 Action: Build and Deploy
+👤 Triggered by: $actor
+
+🔗 Commit: $commitSha
+🌿 Branch: $branchName
+📅 Built at: $currentTime
+''';  
   print("📤 Uploading binary artifact straight to Firebase App Distribution pipeline...");
   await runCommand('firebase', [
     'appdistribution:distribute',
     'build/app/outputs/flutter-apk/app-arm64-v8a-release.apk',
     '--app', firebaseAppId,
     '--groups', testerGroups,
-    '--release-notes', releaseNotes ?? 'Automated Flutter Engine Deployment'
+    '--release-notes', releaseNotes 
   ]);
 
   print("\n✅ Deployment successful! Build version $nextFullVersion is live.");
