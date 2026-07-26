@@ -69,7 +69,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
         title: const Text('Delete Expense'),
         content: Text(
           'Are you sure you want to delete "${expense.title}"?',
-          style: const TextStyle(color: Color(0xFF0A1D21)),
+          style: const TextStyle(color: AppColors.brandPrimary),
         ),
         actions: [
           TextButton(
@@ -204,34 +204,44 @@ class _ReportsScreenState extends State<ReportsScreen> {
               runSpacing: 12,
               children: [
                 SizedBox(
-                  width: 260,
+                  width: 180,
                   child: _ReportCard(
                     title: 'Total Revenue',
                     value: _currency(report.revenue),
-                    color: AppColors.dashboardAccent,
+                    color: AppColors.revenueBar,
                     icon: Icons.trending_up,
+                    titleFontSize: 18,
+                    valueFontSize: 20,
                   ),
                 ),
                 SizedBox(
-                  width: 260,
+                  width: 180,
                   child: _ReportCard(
-                    title: 'Total Expenses',
+                    title: 'Total Expenses',               
                     value: _currency(report.expenses),
-                    color: AppColors.dashboardAccent,
-                    icon: Icons.trending_down,
+                    color: AppColors.expenseBar,
+                    icon: Icons.trending_down, 
+                    titleFontSize: 18,
+                    valueFontSize: 20,
                   ),
                 ),
-                SizedBox(
-                  width: 260,
-                  child: _ReportCard(
+                Row(
+                  children: [
+                    Expanded(
+                      child: _ReportCard(
                     title: 'Net Profit / Loss',
                     value: _currency(report.net),
-                    color: AppColors.dashboardAccent,
+                    color: AppColors.dashboardText,
                     icon: report.net >= 0
                         ? Icons.account_balance_wallet_outlined
                         : Icons.warning_amber,
+                    titleFontSize: 18,
+                    valueFontSize: 24,
                   ),
+                    )
+                  ],
                 ),
+               
               ],
             ),
             const SizedBox(height: 24),
@@ -286,7 +296,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                               style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(
                                     fontWeight: FontWeight.w700,
-                                    color: AppColors.dashboardAccent,
+                                    color: AppColors.dashboardText,
                                   ),
                             ),
                           ],
@@ -306,9 +316,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             ),
                             IconButton(
                               onPressed: () => _deleteBooking(booking),
-                              icon: const Icon(Icons.delete_outline, size: 18),
-                              tooltip: 'Delete booking',
-                              color: Theme.of(context).colorScheme.error,
+                              icon: const Icon(Icons.delete, size: 24),
+                              tooltip: 'Delete expense',
+                              color: AppColors.expenseBar,
                             ),
                           ],
                         ),
@@ -383,7 +393,7 @@ class _ReportsScreenState extends State<ReportsScreen> {
                               style: Theme.of(context).textTheme.titleMedium
                                   ?.copyWith(
                                     fontWeight: FontWeight.w700,
-                                    color: AppColors.dashboardAccent,
+                                    color: AppColors.dashboardText,
                                   ),
                             ),
                           ],
@@ -403,9 +413,9 @@ class _ReportsScreenState extends State<ReportsScreen> {
                             ),
                             IconButton(
                               onPressed: () => _deleteExpense(expense),
-                              icon: const Icon(Icons.delete_outline, size: 18),
+                              icon: const Icon(Icons.delete, size: 24),
                               tooltip: 'Delete expense',
-                              color: Theme.of(context).colorScheme.error,
+                              color: AppColors.expenseBar,
                             ),
                           ],
                         ),

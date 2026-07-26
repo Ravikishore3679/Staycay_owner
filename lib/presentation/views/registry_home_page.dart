@@ -759,14 +759,18 @@ class _ReportCard extends StatelessWidget {
     required this.title,
     required this.value,
     required this.color,
-    required this.icon,
+    required this.icon,   
+    required this.titleFontSize,
+    required this.valueFontSize,
   });
 
   final String title;
   final String value;
   final Color color;
   final IconData icon;
-
+  final double titleFontSize;
+  final double valueFontSize;
+  
   @override
   Widget build(BuildContext context) {
     return Card(
@@ -785,7 +789,8 @@ class _ReportCard extends StatelessWidget {
                 Expanded(
                   child: Text(
                     title,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                      fontSize: titleFontSize, // 5. Assign variable here
                       color: AppColors.dashboardText,
                     ),
                   ),
@@ -796,6 +801,7 @@ class _ReportCard extends StatelessWidget {
             Text(
               value,
               style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontSize: valueFontSize,
                 fontWeight: FontWeight.w700,
                 color: color,
               ),

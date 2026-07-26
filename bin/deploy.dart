@@ -68,7 +68,7 @@ await runCommand('flutter', [
  // Extract metadata dynamically from environment variables or use fallback strings
   final String commitSha = Platform.environment['GITHUB_SHA'] ?? 'N/A';
   final String branchName = Platform.environment['GITHUB_REF_NAME'] ?? 'master';
-  final String actor = Platform.environment['GITHUB_ACTOR'] ?? 'Automated Script';
+  final String actor = Platform.environment['GITHUB_ACTOR'] ?? 'Ravi Kishore Goud';
   final String currentTime = DateTime.now().toUtc().toIso8601String();
 
   // Create the formatted release notes string exactly matching your visual layout

@@ -27,7 +27,7 @@ class AppColors {
   static const Color dashboardText = Color(0xFFE1ECEE); 
   
   /// 10% Focal Point: Warm Butterscotch highlight for CTAs and interactive states.
-  static const Color dashboardAccent = Color(0xFFF4C47C); 
+  static const Color dashboardAccent = Color.fromARGB(175, 171, 188, 134); 
 
   // ===========================================================================
   // Revenue System (Clean, Positive Coastal Greens)
@@ -42,7 +42,7 @@ class AppColors {
   static const Color revenueSoft = Color(0xFFCCFBF1); 
   
   /// Solid chart color calibrated for data visualizations and bars.
-  static const Color revenueBar = Color(0xFF14B8A6); 
+  static const Color revenueBar = Color.fromARGB(255, 28, 211, 22); 
 
   // ===========================================================================
   // Expense System (Urgent, Clean Warm Terracottas)

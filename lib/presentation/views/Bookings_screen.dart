@@ -793,7 +793,9 @@ class _BookingsScreenState extends State<BookingsScreen> {
                       Row(
                         children: [
                           Expanded(
+                            
                             child: FilledButton.icon(
+                              
                               onPressed: () async {
                                 final messenger = ScaffoldMessenger.of(context);
                                 if (!(_formKey.currentState?.validate() ??

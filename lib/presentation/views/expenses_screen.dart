@@ -218,11 +218,14 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                           return null;
                         },
                       ),
-                      const SizedBox(height: 14),
+                      const SizedBox(height: 15),
                       Row(
                         children: [
                           Expanded(
                             child: FilledButton.icon(
+                              style: FilledButton.styleFrom(
+                                backgroundColor:  AppColors.expenseBar,
+                              ),
                               onPressed: () async {
                                 final messenger = ScaffoldMessenger.of(context);
                                 if (!(_formKey.currentState?.validate() ??
@@ -264,12 +267,20 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                                   );
                                 }
                               },
-                              icon: const Icon(Icons.add, size: 20),
-                              label: const Text('Add Expense'),
+                              icon: const Icon(Icons.add, size: 20, color: AppColors.expenseSoft),
+                              label: const Text(
+                                'Add Expense',
+                                style: TextStyle(
+                                  color: AppColors.expenseSoft,
+                                ),
+                              ),
                             ),
                           ),
                           const SizedBox(width: 12),
                           OutlinedButton(
+                            style: OutlinedButton.styleFrom(
+                              foregroundColor: AppColors.expenseSoft,
+                            ),
                             onPressed: _clearForm,
                             child: const Text('Clear'),
                           ),
@@ -320,7 +331,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                               textAlign: TextAlign.end,
                               style: Theme.of(context).textTheme.labelLarge
                                   ?.copyWith(
-                                    color: AppColors.dashboardAccent,
+                                    color: AppColors.dashboardText,
                                     fontWeight: FontWeight.bold,
                                   ),
                             ),
