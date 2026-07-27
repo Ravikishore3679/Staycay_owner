@@ -18,9 +18,11 @@ part 'Bookings_screen.dart';
 part 'expenses_screen.dart';
 part 'reports_screen.dart';
 
-// -------------------------------
+
+
+// -----------------------------
 // Presentation Layer
-// -------------------------------
+
 
 class RegistryHomePage extends StatefulWidget {
   const RegistryHomePage({
@@ -341,6 +343,7 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
     );
   }
 }
+// -------------------------------
 
 // -------------------------------
 // Shared Widgets

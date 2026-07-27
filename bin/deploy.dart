@@ -56,20 +56,22 @@ print("🧹 Cleaning local Android build artifacts manually...");
  // ]);
 
 //  AFTER (Slices your APK size by up to 60%)
+// Extract metadata dynamically from environment variables or use fallback strings
+  final String commitSha = Platform.environment['GITHUB_SHA'] ?? 'N/A';
+  final String branchName = Platform.environment['GITHUB_REF_NAME'] ?? 'master';
+  final String actor = Platform.environment['GITHUB_ACTOR'] ?? 'Ravi Kishore Goud';
+  final String currentTime = DateTime.now().toUtc().toIso8601String();
 
 print("📦 Generating signed compilation binary...");
 await runCommand('flutter', [
   'build', 'apk', 
   '--release', 
   '--split-per-abi', // ⚡ Splits the single giant APK into 3 small, optimized APKs
-  '--dart-define-from-file=.env'
+  '--dart-define-from-file=.env',
+    '--dart-define=GITHUB_SHA=$commitSha', // 🔥 Injecting variables straight into the Flutter binary
+    '--dart-define=GITHUB_REF_NAME=$branchName',
+    '--dart-define=GITHUB_ACTOR=$actor',
 ]);
-
- // Extract metadata dynamically from environment variables or use fallback strings
-  final String commitSha = Platform.environment['GITHUB_SHA'] ?? 'N/A';
-  final String branchName = Platform.environment['GITHUB_REF_NAME'] ?? 'master';
-  final String actor = Platform.environment['GITHUB_ACTOR'] ?? 'Ravi Kishore Goud';
-  final String currentTime = DateTime.now().toUtc().toIso8601String();
 
   // Create the formatted release notes string exactly matching your visual layout
   final String releaseNotes = '''
@@ -88,6 +90,7 @@ await runCommand('flutter', [
 🌿 Branch: $branchName
 📅 Built at: $currentTime
 ''';  
+
   print("📤 Uploading binary artifact straight to Firebase App Distribution pipeline...");
   await runCommand('firebase', [
     'appdistribution:distribute',
