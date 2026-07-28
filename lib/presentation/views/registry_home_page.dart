@@ -1,4 +1,5 @@
 import 'dart:math' as math;
+import 'dart:typed_data';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -28,12 +29,16 @@ class RegistryHomePage extends StatefulWidget {
   const RegistryHomePage({
     super.key,
     required this.guestHouseName,
+    required this.guestHouseAddress,
+    required this.guestHousePhotoBytes,
     required this.onGuestHouseNameChanged,
     required this.registryViewModel,
     required this.authViewModel,
   });
 
   final String guestHouseName;
+  final String guestHouseAddress;
+  final Uint8List? guestHousePhotoBytes;
   final ValueChanged<String> onGuestHouseNameChanged;
   final RegistryViewModel registryViewModel;
   final AuthViewModel authViewModel;
@@ -154,6 +159,8 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
           BookingsScreen(
             controller: _registryViewModel,
             guestHouseName: widget.guestHouseName,
+            guestHouseAddress: widget.guestHouseAddress,
+            guestHousePhotoBytes: widget.guestHousePhotoBytes,
           ),
           ExpensesScreen(controller: _registryViewModel),
           ReportsScreen(controller: _registryViewModel),

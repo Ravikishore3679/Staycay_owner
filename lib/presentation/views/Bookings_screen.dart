@@ -5,10 +5,14 @@ class BookingsScreen extends StatefulWidget {
     super.key,
     required this.controller,
     required this.guestHouseName,
+    required this.guestHouseAddress,
+    required this.guestHousePhotoBytes,
   });
 
   final RegistryViewModel controller;
   final String guestHouseName;
+  final String guestHouseAddress;
+  final Uint8List? guestHousePhotoBytes;
 
   @override
   State<BookingsScreen> createState() => _BookingsScreenState();
@@ -132,6 +136,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
 
   Future<Uint8List> _buildBookingReceiptPdf(Booking booking) async {
     final pdf = pw.Document();
+    final photoBytes = widget.guestHousePhotoBytes;
 
     pw.Widget detailRow(String label, String value, {bool emphasize = false}) {
       return pw.Padding(
@@ -175,20 +180,51 @@ class _BookingsScreenState extends State<BookingsScreen> {
                   color: PdfColors.teal50,
                   borderRadius: pw.BorderRadius.circular(10),
                 ),
-                child: pw.Column(
+                child: pw.Row(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
                   children: [
-                    pw.Text(
-                      widget.guestHouseName,
-                      style: pw.TextStyle(
-                        fontSize: 18,
-                        fontWeight: pw.FontWeight.bold,
+                    if (photoBytes != null)
+                      pw.Container(
+                        width: 64,
+                        height: 64,
+                        margin: const pw.EdgeInsets.only(right: 12),
+                        decoration: pw.BoxDecoration(
+                          borderRadius: pw.BorderRadius.circular(8),
+                        ),
+                        child: pw.ClipRRect(
+                          horizontalRadius: 8,
+                          verticalRadius: 8,
+                          child: pw.Image(
+                            pw.MemoryImage(photoBytes),
+                            fit: pw.BoxFit.cover,
+                          ),
+                        ),
+                      ),
+                    pw.Expanded(
+                      child: pw.Column(
+                        crossAxisAlignment: pw.CrossAxisAlignment.start,
+                        children: [
+                          pw.Text(
+                            widget.guestHouseName,
+                            style: pw.TextStyle(
+                              fontSize: 18,
+                              fontWeight: pw.FontWeight.bold,
+                            ),
+                          ),
+                          if (widget.guestHouseAddress.trim().isNotEmpty) ...[
+                            pw.SizedBox(height: 3),
+                            pw.Text(
+                              widget.guestHouseAddress,
+                              style: const pw.TextStyle(fontSize: 10),
+                            ),
+                          ],
+                          pw.SizedBox(height: 4),
+                          pw.Text('Booking Acknowledgement Receipt'),
+                          pw.Text('Receipt ID: ${booking.id}'),
+                          pw.Text('Issued On: ${_formatDate(DateTime.now())}'),
+                        ],
                       ),
                     ),
-                    pw.SizedBox(height: 4),
-                    pw.Text('Booking Acknowledgement Receipt'),
-                    pw.Text('Receipt ID: ${booking.id}'),
-                    pw.Text('Issued On: ${_formatDate(DateTime.now())}'),
                   ],
                 ),
               ),
