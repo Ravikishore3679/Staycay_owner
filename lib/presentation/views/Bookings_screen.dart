@@ -41,6 +41,40 @@ class _BookingsScreenState extends State<BookingsScreen> {
   DateTime? _checkIn;
   DateTime? _checkOut;
 
+  Widget _datePickerThemeWrapper(BuildContext context, Widget? child) {
+    final base = Theme.of(context);
+    final scheme = ColorScheme.fromSeed(
+      seedColor: base.colorScheme.primary,
+      brightness: Brightness.light,
+    );
+
+    return Theme(
+      data: base.copyWith(
+        colorScheme: scheme,
+        datePickerTheme: DatePickerThemeData(
+          backgroundColor: scheme.surface,
+          surfaceTintColor: Colors.transparent,
+          headerBackgroundColor: scheme.primary,
+          headerForegroundColor: scheme.onPrimary,
+          dayForegroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) return scheme.onPrimary;
+            if (states.contains(WidgetState.disabled)) {
+              return scheme.onSurface.withValues(alpha: 0.38);
+            }
+            return scheme.onSurface;
+          }),
+          dayBackgroundColor: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) return scheme.primary;
+            return null;
+          }),
+          todayForegroundColor: WidgetStateProperty.all(scheme.primary),
+          todayBorder: BorderSide(color: scheme.primary, width: 1.2),
+        ),
+      ),
+      child: child ?? const SizedBox.shrink(),
+    );
+  }
+
   @override
   void dispose() {
     _nameCtrl.dispose();
@@ -63,6 +97,8 @@ class _BookingsScreenState extends State<BookingsScreen> {
       initialDate: initialDate,
       firstDate: DateTime(now.year - 1),
       lastDate: DateTime(now.year + 5),
+      builder: (pickerContext, child) =>
+          _datePickerThemeWrapper(pickerContext, child),
     );
 
     if (selected == null) return;
@@ -224,103 +260,130 @@ class _BookingsScreenState extends State<BookingsScreen> {
   Future<void> _showBookingReceipt(Booking booking) async {
     await showDialog<void>(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Text('Booking Acknowledgement'),
-        content: SizedBox(
-          width: 420,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Theme.of(context).colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        widget.guestHouseName,
-                        style: Theme.of(context).textTheme.titleMedium
-                            ?.copyWith(fontWeight: FontWeight.w700),
-                      ),
-                      const SizedBox(height: 4),
-                      Text('Receipt ID: ${booking.id}'),
-                      Text('Issued On: ${_formatDate(DateTime.now())}'),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                _ReceiptRow(label: 'Guest Name', value: booking.name),
-                _ReceiptRow(label: 'Phone', value: booking.phone),
-                _ReceiptRow(label: 'Aadhaar', value: booking.aadhaar),
-                _ReceiptRow(
-                  label: 'Check-in',
-                  value: _formatDate(booking.checkIn),
-                ),
-                _ReceiptRow(
-                  label: 'Check-out',
-                  value: _formatDate(booking.checkOut),
-                ),
-                _ReceiptRow(label: 'Guests', value: booking.guests.toString()),
-                _ReceiptRow(
-                  label: 'Total Amount',
-                  value: _currency(booking.totalAmount),
-                ),
-                _ReceiptRow(
-                  label: 'Advance Paid',
-                  value: _currency(booking.advancePaid),
-                ),
-                _ReceiptRow(
-                  label: 'Remaining Amount',
-                  value: _currency(booking.remainingAmount),
-                  emphasize: true,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Stay Rules',
-                  style: Theme.of(context)
-                      .textTheme
-                      .titleSmall
-                      ?.copyWith(fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(height: 8),
-                ..._houseRules.map(
-                  (rule) => Padding(
-                    padding: const EdgeInsets.only(bottom: 6),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text('• '),
-                        Expanded(child: Text(rule)),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
+      builder: (dialogContext) {
+        final base = Theme.of(dialogContext);
+        final scheme = ColorScheme.fromSeed(
+          seedColor: base.colorScheme.primary,
+          brightness: Brightness.light,
+        );
+
+        return Theme(
+          data: base.copyWith(
+            colorScheme: scheme,
+            dialogTheme: DialogThemeData(backgroundColor: scheme.surface),
+            textTheme: base.textTheme.apply(
+              bodyColor: scheme.onSurface,
+              displayColor: scheme.onSurface,
+            ),
+            textButtonTheme: TextButtonThemeData(
+              style: TextButton.styleFrom(foregroundColor: scheme.primary),
             ),
           ),
-        ),
-        actions: [
-          TextButton.icon(
-            onPressed: () async {
-              Navigator.of(context).pop();
-              if (!mounted) return;
-              await _downloadBookingReceiptPdf(booking);
-            },
-            icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
-            label: const Text('Download PDF'),
+          child: AlertDialog(
+            title: const Text('Booking Acknowledgement'),
+            content: SizedBox(
+              width: 420,
+              child: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Theme.of(dialogContext)
+                            .colorScheme
+                            .primaryContainer,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            widget.guestHouseName,
+                            
+                          ),
+                          const SizedBox(height: 4),
+                          Text('Receipt ID: ${booking.id}'),
+                          Text('Issued On: ${_formatDate(DateTime.now())}'),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    _ReceiptRow(label: 'Guest Name', value: booking.name),
+                    _ReceiptRow(label: 'Phone', value: booking.phone),
+                    _ReceiptRow(label: 'Aadhaar', value: booking.aadhaar),
+                    _ReceiptRow(
+                      label: 'Check-in',
+                      value: _formatDate(booking.checkIn),
+                    ),
+                    _ReceiptRow(
+                      label: 'Check-out',
+                      value: _formatDate(booking.checkOut),
+                    ),
+                    _ReceiptRow(
+                      label: 'Guests',
+                      value: booking.guests.toString(),
+                    ),
+                    _ReceiptRow(
+                      label: 'Total Amount',
+                      value: _currency(booking.totalAmount),
+                    ),
+                    _ReceiptRow(
+                      label: 'Advance Paid',
+                      value: _currency(booking.advancePaid),
+                    ),
+                    _ReceiptRow(
+                      label: 'Remaining Amount',
+                      value: _currency(booking.remainingAmount),
+                      emphasize: true,
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Stay Rules',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: Color.fromARGB(255, 10, 52, 6),
+                      ),
+                    
+                    ),
+                    const SizedBox(height: 8),
+                    ..._houseRules.map(
+                      (rule) => Padding(
+                        padding: const EdgeInsets.only(bottom: 6),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text('• '),
+                            Expanded(child: Text(rule)),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            actions: [
+              TextButton.icon(
+                onPressed: () async {
+                  Navigator.of(dialogContext).pop();
+                  if (!mounted) return;
+                  await _downloadBookingReceiptPdf(booking);
+                },
+                icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
+                label: const Text('Download PDF'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.of(dialogContext).pop(),
+                child: const Text('Close'),
+              ),
+            ],
           ),
-          TextButton(
-            onPressed: () => Navigator.of(context).pop(),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -348,13 +411,18 @@ class _BookingsScreenState extends State<BookingsScreen> {
             final advance = _toAmount(advanceCtrl.text);
             final remaining = total - advance;
 
-            Future<void> pickDate({required bool isCheckIn}) async {
+            Future<void> pickDate({
+              required BuildContext pickerContext,
+              required bool isCheckIn,
+            }) async {
               final now = DateTime.now();
               final selected = await showDatePicker(
-                context: dialogContext,
+                context: pickerContext,
                 initialDate: isCheckIn ? checkIn : checkOut,
                 firstDate: DateTime(now.year - 1),
                 lastDate: DateTime(now.year + 5),
+                builder: (context, child) =>
+                    _datePickerThemeWrapper(context, child),
               );
               
               if (selected == null) return;
@@ -435,7 +503,10 @@ class _BookingsScreenState extends State<BookingsScreen> {
                             child: _DateField(
                               label: 'Check-in',
                               value: checkIn,
-                              onTap: () => pickDate(isCheckIn: true),
+                              onTap: () => pickDate(
+                                pickerContext: dialogBuilderContext,
+                                isCheckIn: true,
+                              ),
                             ),
                           ),
                           const SizedBox(width: 8),
@@ -443,7 +514,10 @@ class _BookingsScreenState extends State<BookingsScreen> {
                             child: _DateField(
                               label: 'Check-out',
                               value: checkOut,
-                              onTap: () => pickDate(isCheckIn: false),
+                              onTap: () => pickDate(
+                                pickerContext: dialogBuilderContext,
+                                isCheckIn: false,
+                              ),
                             ),
                           ),
                         ],
