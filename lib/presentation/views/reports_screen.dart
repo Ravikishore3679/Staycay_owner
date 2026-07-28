@@ -203,8 +203,10 @@ class _ReportsScreenState extends State<ReportsScreen> {
               spacing: 12,
               runSpacing: 12,
               children: [
-                SizedBox(
-                  width: 180,
+                
+                Row(
+                children: [
+                Expanded(
                   child: _ReportCard(
                     title: 'Total Revenue',
                     value: _currency(report.revenue),
@@ -214,8 +216,8 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     valueFontSize: 20,
                   ),
                 ),
-                SizedBox(
-                  width: 180,
+                const SizedBox(width:12),
+               Expanded(
                   child: _ReportCard(
                     title: 'Total Expenses',               
                     value: _currency(report.expenses),
@@ -225,13 +227,16 @@ class _ReportsScreenState extends State<ReportsScreen> {
                     valueFontSize: 20,
                   ),
                 ),
+                ],
+                ),
+                
                 Row(
                   children: [
                     Expanded(
                       child: _ReportCard(
                     title: 'Net Profit / Loss',
                     value: _currency(report.net),
-                    color: AppColors.dashboardText,
+                    color: report.net >= 0 ? AppColors.revenueBar : AppColors.expenseBar,
                     icon: report.net >= 0
                         ? Icons.account_balance_wallet_outlined
                         : Icons.warning_amber,

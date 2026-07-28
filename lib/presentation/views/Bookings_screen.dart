@@ -356,7 +356,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                 firstDate: DateTime(now.year - 1),
                 lastDate: DateTime(now.year + 5),
               );
-
+              
               if (selected == null) return;
               setDialogState(() {
                 if (isCheckIn) {
@@ -921,11 +921,13 @@ class _BookingsScreenState extends State<BookingsScreen> {
                     
                     subtitle: Text(
                       '${_formatDate(booking.checkIn)}  ->  ${_formatDate(booking.checkOut)}',
+                      
                     ),
                     trailing: Text(
                       _currency(booking.totalAmount),
                       style: Theme.of(context).textTheme.titleSmall?.copyWith(
                         fontWeight: FontWeight.bold,
+                        
                       ),
                     ),
                     
