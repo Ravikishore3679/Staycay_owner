@@ -42,6 +42,21 @@ service cloud.firestore {
           data.date is timestamp;
     }
 
+    function isValidProfile(data) {
+      return data.keys().hasOnly([
+               'name',
+               'address',
+               'photoBytes',
+               'email',
+               'updatedAt'
+             ]) &&
+          data.name is string && data.name.size() >= 3 && data.name.size() <= 80 &&
+          data.address is string && data.address.size() >= 10 && data.address.size() <= 250 &&
+          data.photoBytes is bytes &&
+          (!('email' in data) || data.email is string) &&
+          (!('updatedAt' in data) || data.updatedAt is timestamp);
+    }
+
     // User bookings
     match /users/{userId}/bookings/{bookingId} {
       allow read: if isSignedIn() && request.auth.uid == userId;
@@ -53,6 +68,13 @@ service cloud.firestore {
     match /users/{userId}/expenses/{expenseId} {
       allow read: if isSignedIn() && request.auth.uid == userId;
       allow create, update: if isSignedIn() && request.auth.uid == userId && isValidExpense(request.resource.data);
+      allow delete: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    // User profile
+    match /users/{userId}/profile/{profileId} {
+      allow read: if isSignedIn() && request.auth.uid == userId;
+      allow create, update: if isSignedIn() && request.auth.uid == userId && isValidProfile(request.resource.data);
       allow delete: if isSignedIn() && request.auth.uid == userId;
     }
 

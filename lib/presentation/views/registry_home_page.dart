@@ -1,6 +1,4 @@
 import 'dart:math' as math;
-import 'dart:typed_data';
-
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -39,7 +37,7 @@ class RegistryHomePage extends StatefulWidget {
   final String guestHouseName;
   final String guestHouseAddress;
   final Uint8List? guestHousePhotoBytes;
-  final ValueChanged<String> onGuestHouseNameChanged;
+  final Future<void> Function(String value) onGuestHouseNameChanged;
   final RegistryViewModel registryViewModel;
   final AuthViewModel authViewModel;
 
@@ -102,7 +100,16 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
     controller.dispose();
 
     if (newName == null || newName == widget.guestHouseName) return;
-    widget.onGuestHouseNameChanged(newName);
+
+    try {
+      await widget.onGuestHouseNameChanged(newName);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to update guest house name: $e')),
+      );
+      return;
+    }
 
     if (!mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(

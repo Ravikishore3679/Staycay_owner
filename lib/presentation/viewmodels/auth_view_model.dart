@@ -29,7 +29,10 @@ class AuthViewModel extends ChangeNotifier {
 
   Stream<User?> authStateChanges() => authService.authStateChanges();
 
-  void startListening({void Function(String uid)? onUserChanged}) {
+  void startListening({
+    void Function(String uid)? onUserChanged,
+    VoidCallback? onSignedOut,
+  }) {
     _authSub?.cancel();
     _user = authService.currentUser;
     final initialUid = _user?.uid;
@@ -44,12 +47,15 @@ class AuthViewModel extends ChangeNotifier {
       if (user != null) {
         _clearPhoneState(notify: false);
       }
-      notifyListeners();
 
       final currentUid = user?.uid;
       if (currentUid != null && currentUid != previousUid) {
         onUserChanged?.call(currentUid);
+      } else if (currentUid == null && previousUid != null) {
+        onSignedOut?.call();
       }
+
+      notifyListeners();
     });
   }
 

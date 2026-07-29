@@ -1,7 +1,9 @@
-import 'package:flutter/material.dart';
 import 'dart:typed_data';
 
+import 'package:flutter/material.dart';
+
 import 'data/repositories/firestore_registry_repository.dart';
+import 'data/repositories/guest_house_profile_repository.dart';
 import 'presentation/theme/app_colors.dart';
 import 'presentation/viewmodels/auth_view_model.dart';
 import 'presentation/viewmodels/registry_view_model.dart';
@@ -22,9 +24,12 @@ class _GuestHouseRegistryAppState extends State<GuestHouseRegistryApp> {
   String _guestHouseAddress = '';
   Uint8List? _guestHousePhotoBytes;
   bool _isProfileCompleted = false;
+  bool _isProfileLoading = false;
 
   late final RegistryViewModel _registryViewModel;
   late final AuthViewModel _authViewModel;
+  late final GuestHouseProfileRepository _guestHouseProfileRepository;
+  int _profileLoadToken = 0;
 
   @override
   void initState() {
@@ -32,12 +37,72 @@ class _GuestHouseRegistryAppState extends State<GuestHouseRegistryApp> {
     _registryViewModel = RegistryViewModel(
       repository: FirestoreRegistryRepository(),
     );
+    _guestHouseProfileRepository = GuestHouseProfileRepository();
     _authViewModel = AuthViewModel(authService: AuthService());
     _authViewModel.startListening(
       onUserChanged: (_) {
         _registryViewModel.loadData();
+        _loadGuestHouseProfile();
       },
+      onSignedOut: _resetGuestHouseProfile,
     );
+  }
+
+  void _resetGuestHouseProfile() {
+    setState(() {
+      _guestHouseName = 'Guest House Registry';
+      _guestHouseAddress = '';
+      _guestHousePhotoBytes = null;
+      _isProfileCompleted = false;
+      _isProfileLoading = false;
+      _profileLoadToken++;
+    });
+  }
+
+  Future<void> _loadGuestHouseProfile() async {
+    final user = _authViewModel.user;
+    if (user == null) return;
+
+    final loadToken = ++_profileLoadToken;
+    if (!mounted) return;
+
+    setState(() {
+      _isProfileLoading = true;
+    });
+
+    try {
+      final profile = await _guestHouseProfileRepository.loadProfile(
+        uid: user.uid,
+      );
+
+      if (!mounted || loadToken != _profileLoadToken) return;
+
+      setState(() {
+        if (profile == null) {
+          _guestHouseName = 'Guest House Registry';
+          _guestHouseAddress = '';
+          _guestHousePhotoBytes = null;
+          _isProfileCompleted = false;
+        } else {
+          _guestHouseName = profile.name;
+          _guestHouseAddress = profile.address;
+          _guestHousePhotoBytes = profile.photoBytes;
+          _isProfileCompleted = true;
+        }
+
+        _isProfileLoading = false;
+      });
+    } catch (_) {
+      if (!mounted || loadToken != _profileLoadToken) return;
+
+      setState(() {
+        _guestHouseName = 'Guest House Registry';
+        _guestHouseAddress = '';
+        _guestHousePhotoBytes = null;
+        _isProfileCompleted = false;
+        _isProfileLoading = false;
+      });
+    }
   }
 
   @override
@@ -81,8 +146,13 @@ class _GuestHouseRegistryAppState extends State<GuestHouseRegistryApp> {
           final user = _authViewModel.user;
 
           if (user == null) {
-            _isProfileCompleted = false;
             return LoginScreen(authViewModel: _authViewModel);
+          }
+
+          if (_isProfileLoading) {
+            return const Scaffold(
+              body: Center(child: CircularProgressIndicator()),
+            );
           }
 
           if (!_isProfileCompleted) {
@@ -97,6 +167,17 @@ class _GuestHouseRegistryAppState extends State<GuestHouseRegistryApp> {
                 required String address,
                 required Uint8List photoBytes,
               }) async {
+                final currentUser = _authViewModel.user;
+                if (currentUser == null) return;
+
+                await _guestHouseProfileRepository.saveProfile(
+                  uid: currentUser.uid,
+                  name: name,
+                  address: address,
+                  photoBytes: photoBytes,
+                  email: currentUser.email,
+                );
+
                 if (!mounted) return;
                 setState(() {
                   _guestHouseName = name;
@@ -112,7 +193,24 @@ class _GuestHouseRegistryAppState extends State<GuestHouseRegistryApp> {
             guestHouseName: _guestHouseName,
             guestHouseAddress: _guestHouseAddress,
             guestHousePhotoBytes: _guestHousePhotoBytes,
-            onGuestHouseNameChanged: (value) {
+            onGuestHouseNameChanged: (value) async {
+              final currentUser = _authViewModel.user;
+              if (currentUser == null) return;
+
+              final currentPhotoBytes = _guestHousePhotoBytes;
+              if (currentPhotoBytes == null) {
+                throw StateError('Guest house photo is missing.');
+              }
+
+              await _guestHouseProfileRepository.saveProfile(
+                uid: currentUser.uid,
+                name: value,
+                address: _guestHouseAddress,
+                photoBytes: currentPhotoBytes,
+                email: currentUser.email,
+              );
+
+              if (!mounted) return;
               setState(() {
                 _guestHouseName = value;
               });
