@@ -379,6 +379,7 @@ pw.Widget _buildModernRow(
   }
 
   // Visual layout helper method for neat data alignments
+  // ignore: unused_element
   pw.Widget _buildModernRow(String label, String value, [PdfColor valueColor = PdfColors.grey900, bool hasBg = false, bool isBold = false]) {
     return pw.Container(
       padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 7),
