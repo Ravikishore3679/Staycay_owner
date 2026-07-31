@@ -139,33 +139,41 @@ class _BookingsScreenState extends State<BookingsScreen> {
     final pdf = pw.Document();
     final photoBytes = widget.guestHousePhotoBytes;
 
-    pw.Widget detailRow(String label, String value, {bool emphasize = false}) {
-      return pw.Padding(
-        padding: const pw.EdgeInsets.only(bottom: 8),
-        child: pw.Row(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.SizedBox(
-              width: 110,
-              child: pw.Text(
-                '$label:',
-                style: pw.TextStyle(color: PdfColors.blueGrey700),
-              ),
-            ),
-            pw.Expanded(
-              child: pw.Text(
-                value,
-                style: pw.TextStyle(
-                  fontWeight: emphasize
-                      ? pw.FontWeight.bold
-                      : pw.FontWeight.normal,
-                ),
-              ),
-            ),
-          ],
+   
+pw.Widget _buildModernRow(
+  String label, 
+  String value, 
+  PdfColor valueColor, 
+  bool hasBg, 
+  bool isBold,
+) {
+  return pw.Container(
+    padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+    decoration: pw.BoxDecoration(
+      color: hasBg ? PdfColors.grey50 : null,
+      border: const pw.Border(
+        bottom: pw.BorderSide(color: PdfColors.grey200, width: 0.5),
+      ),
+    ),
+    child: pw.Row(
+      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+      children: [
+        pw.Text(
+          label,
+          style: const pw.TextStyle(color: PdfColors.grey600, fontSize: 10),
         ),
-      );
-    }
+        pw.Text(
+          value,
+          style: pw.TextStyle(
+            color: valueColor,
+            fontSize: 10,
+            fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
+          ),
+        ),
+      ],
+    ),
+  );
+}
 
    pdf.addPage(
       pw.Page(
@@ -176,7 +184,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
           const accentColor = PdfColors.teal700;        // Muted teal for highlight lines & tags
           const textDark = PdfColors.grey900;           // Crisp readable text
           const textMuted = PdfColors.grey600;          // Subtle secondary metadata
-          const bgLight = PdfColors.grey50;             // Zebra stripe background
+          //const bgLight = PdfColors.grey50;             // Zebra stripe background
           const bgHeader = PdfColors.blueGrey50;        // Soft layout header background
           const alertColor = PdfColors.deepOrange800;   // Contrast color for remaining dues
 
@@ -303,8 +311,8 @@ class _BookingsScreenState extends State<BookingsScreen> {
               _buildModernRow('Guest Name', booking.name, textDark, false, false),
               _buildModernRow('Phone', booking.phone, textDark, true, false),
               _buildModernRow('Aadhaar', booking.aadhaar, textDark, false, false),
-              _buildModernRow('Check-in', _formatDate(booking.checkIn)),
-              _buildModernRow('Check-out', _formatDate(booking.checkOut)),
+              _buildModernRow('Check-in', _formatDate(booking.checkIn),textDark, true, false),
+              _buildModernRow('Check-out', _formatDate(booking.checkOut),textDark, false, false),
               _buildModernRow('Guests', booking.guests.toString(), textDark, false, false),
               _buildModernRow('Total Amount', _currency(booking.totalAmount), textDark, true, false),
               _buildModernRow('Advance Paid', _currency(booking.advancePaid), accentColor, false, true),
