@@ -4,10 +4,10 @@ import 'package:flutter/widgets.dart';
 import 'app.dart';
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
-import 'package:audioplayers/audioplayers.dart';
+
 
 // Globally accessible player instance
-final AudioPlayer globalAudioPlayer = AudioPlayer();
+
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
