@@ -23,14 +23,14 @@ class DashboardScreen extends StatelessWidget {
           const _DashboardSectionTitle(
             icon: Icons.insights,
             title: 'Revenue vs Expenditure',
-            subtitle: 'Overall financial snapshot',
+            subtitle: 'Revenue reflects amount paid only',
           ),
           const SizedBox(height: 12),
           Row(
             children: [
               Expanded(
                 child: _DashboardMetricCard(
-                  label: 'Revenue',
+                  label: 'Revenue (Paid)',
                   value: _currency(revenue),
                   icon: Icons.trending_up,
                   color: const Color.fromARGB(255, 13, 56, 10),
@@ -60,7 +60,7 @@ class DashboardScreen extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   _FinancialSummaryBar(
-                    label: 'Revenue', // bold
+                    label: 'Revenue (Paid)',
                     value: revenue,
                     max: progressMax,
                     color: const Color.fromARGB(255, 26, 163, 63),
@@ -147,6 +147,7 @@ class DashboardScreen extends StatelessWidget {
               (booking) => Card(
                 color: const Color(0xFF1B3F47),
                 child: ListTile(
+                  isThreeLine: true,
                   leading: CircleAvatar(
                     backgroundColor: const Color.fromARGB(255, 63, 161, 183).withValues(
                       alpha: 0.2,
@@ -161,18 +162,37 @@ class DashboardScreen extends StatelessWidget {
                     style: const TextStyle(color: AppColors.dashboardText),
                   ),
                   subtitle: Text(
-                    '${_formatDate(booking.checkIn)}  ->  ${_formatDate(booking.checkOut)}',
+                    '${_formatDate(booking.checkIn)}  ->  ${_formatDate(booking.checkOut)}\nPaid: ${_currency(booking.collectedAmount)} | To Collect: ${_currency(booking.remainingAmount)}',
                     style: TextStyle(
                       color: AppColors.dashboardText.withValues(alpha: 0.8),
                     ),
                   ),
-                  trailing: Text(
-                    _currency(booking.totalAmount),
-                    style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.dashboardText,
-                    ),
+                  trailing: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Text(
+                        'Collect',
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: AppColors.dashboardText.withValues(alpha: 0.8),
+                            ),
+                      ),
+                      Text(
+                        _currency(booking.remainingAmount),
+                        style: Theme.of(context).textTheme.titleSmall?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.dashboardText,
+                        ),
+                      ),
+                    ],
                   ),
+                  onTap: () {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(
+                        content: Text('Edit this booking in Bookings tab after collecting payment.'),
+                      ),
+                    );
+                  },
                 ),
               ),
             ),

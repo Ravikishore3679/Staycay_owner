@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:math' as math;
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -48,7 +49,9 @@ class RegistryHomePage extends StatefulWidget {
 class _RegistryHomePageState extends State<RegistryHomePage> {
   late final RegistryViewModel _registryViewModel;
   late final AuthViewModel _authViewModel;
+  late final Timer _clockTimer;
   int _index = 0;
+  DateTime _now = DateTime.now();
 
   Future<void> _editGuestHouseName() async {
     final controller = TextEditingController(text: widget.guestHouseName);
@@ -154,6 +157,18 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
     super.initState();
     _registryViewModel = widget.registryViewModel;
     _authViewModel = widget.authViewModel;
+    _clockTimer = Timer.periodic(const Duration(seconds: 30), (_) {
+      if (!mounted) return;
+      setState(() {
+        _now = DateTime.now();
+      });
+    });
+  }
+
+  @override
+  void dispose() {
+    _clockTimer.cancel();
+    super.dispose();
   }
 
   @override
@@ -177,7 +192,14 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
           appBar: AppBar(
             backgroundColor: AppColors.dashboardAccent,
             foregroundColor: AppColors.dashboardCanvas,
-            title: Text(widget.guestHouseName),
+            toolbarHeight: 86,
+            titleSpacing: 12,
+            title: _GuestHouseHeaderTitle(
+              guestHouseName: widget.guestHouseName,
+              guestHouseAddress: widget.guestHouseAddress,
+              guestHousePhotoBytes: widget.guestHousePhotoBytes,
+              now: _now,
+            ),
             titleTextStyle: Theme.of(context).textTheme.titleLarge?.copyWith(
               color: AppColors.dashboardCanvas,
               fontWeight: FontWeight.w700,
@@ -398,6 +420,82 @@ class _SectionTitle extends StatelessWidget {
                 subtitle,
                 style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: AppColors.dashboardText.withValues(alpha: 0.8),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _GuestHouseHeaderTitle extends StatelessWidget {
+  const _GuestHouseHeaderTitle({
+    required this.guestHouseName,
+    required this.guestHouseAddress,
+    required this.guestHousePhotoBytes,
+    required this.now,
+  });
+
+  final String guestHouseName;
+  final String guestHouseAddress;
+  final Uint8List? guestHousePhotoBytes;
+  final DateTime now;
+
+  @override
+  Widget build(BuildContext context) {
+    final localizations = MaterialLocalizations.of(context);
+    final date = localizations.formatMediumDate(now);
+    final time = localizations.formatTimeOfDay(
+      TimeOfDay.fromDateTime(now),
+      alwaysUse24HourFormat: MediaQuery.of(context).alwaysUse24HourFormat,
+    );
+
+    return Row(
+      children: [
+        CircleAvatar(
+          radius: 24,
+          backgroundColor: AppColors.dashboardCanvas.withValues(alpha: 0.2),
+          backgroundImage: guestHousePhotoBytes != null
+              ? MemoryImage(guestHousePhotoBytes!)
+              : null,
+          child: guestHousePhotoBytes == null
+              ? const Icon(Icons.home_work_outlined, color: AppColors.dashboardCanvas)
+              : null,
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                guestHouseName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                  color: AppColors.dashboardCanvas,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                guestHouseAddress,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.dashboardCanvas.withValues(alpha: 0.9),
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '$date • $time',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: AppColors.dashboardCanvas.withValues(alpha: 0.82),
+                  fontWeight: FontWeight.w500,
                 ),
               ),
             ],

@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
@@ -24,7 +26,12 @@ class Booking {
   final double totalAmount;
   final double advancePaid;
 
-  double get remainingAmount => totalAmount - advancePaid;
+  double get collectedAmount {
+    final total = totalAmount < 0 ? 0.0 : totalAmount;
+    return advancePaid.clamp(0.0, total).toDouble();
+  }
+
+  double get remainingAmount => math.max(totalAmount - collectedAmount, 0.0);
 
   bool get isUpcoming {
     final today = DateUtils.dateOnly(DateTime.now());

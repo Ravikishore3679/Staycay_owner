@@ -626,7 +626,7 @@ pw.Widget _buildModernRow(
                       TextFormField(
                         controller: nameCtrl,
                         textCapitalization: TextCapitalization.words,
-                        style: const TextStyle(color: AppColors.dashboardText),
+                        style: const TextStyle(color: Color(0xFF0F172A)),
                         decoration: const InputDecoration(labelText: 'Name'),
                         validator: (value) {
                           final v = value?.trim() ?? '';
@@ -645,7 +645,7 @@ pw.Widget _buildModernRow(
                           FilteringTextInputFormatter.digitsOnly,
                           LengthLimitingTextInputFormatter(10),
                         ],
-                        style: const TextStyle(color: AppColors.dashboardText),
+                        style: const TextStyle(color: Color(0xFF0F172A)),
                         decoration: const InputDecoration(labelText: 'Phone'),
                         validator: (value) {
                           final v = value?.trim() ?? '';
@@ -662,7 +662,7 @@ pw.Widget _buildModernRow(
                           FilteringTextInputFormatter.digitsOnly,
                           LengthLimitingTextInputFormatter(12),
                         ],
-                        style: const TextStyle(color: AppColors.dashboardText),
+                        style: const TextStyle(color: Color(0xFF0F172A)),
                         decoration: const InputDecoration(labelText: 'Aadhaar'),
                         validator: (value) {
                           final v = value?.trim() ?? '';
@@ -707,7 +707,7 @@ pw.Widget _buildModernRow(
                           FilteringTextInputFormatter.digitsOnly,
                           LengthLimitingTextInputFormatter(2),
                         ],
-                        style: const TextStyle(color: AppColors.dashboardText),
+                        style: const TextStyle(color: Color(0xFF0F172A)),
                         decoration: const InputDecoration(
                           labelText: 'No. of Guests',
                         ),
@@ -724,7 +724,7 @@ pw.Widget _buildModernRow(
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
-                        style: const TextStyle(color: AppColors.dashboardText),
+                        style: const TextStyle(color: Color(0xFF0F172A)),
                         decoration: const InputDecoration(
                           labelText: 'Total Amount',
                         ),
@@ -742,7 +742,7 @@ pw.Widget _buildModernRow(
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
-                        style: const TextStyle(color: Color.fromARGB(255, 47, 32, 8)),
+                        style: const TextStyle(color:Color(0xFF0F172A)),
                         decoration: const InputDecoration(
                           labelText: 'Advance Paid',
                         ),

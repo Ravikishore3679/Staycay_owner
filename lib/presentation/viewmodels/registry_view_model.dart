@@ -185,8 +185,10 @@ class RegistryViewModel extends ChangeNotifier {
   }
 
   double get totalRevenue {
-    _cachedTotalRevenue ??=
-        _bookings.fold(0.0, (total, booking) => total! + booking.totalAmount);
+    _cachedTotalRevenue ??= _bookings.fold(
+      0.0,
+      (total, booking) => total! + booking.collectedAmount,
+    );
     return _cachedTotalRevenue!;
   }
 
@@ -200,8 +202,10 @@ class RegistryViewModel extends ChangeNotifier {
     final monthBookings = bookingsForMonth(year, month);
     final monthExpenses = expensesForMonth(year, month);
 
-    final revenue =
-        monthBookings.fold(0.0, (total, booking) => total + booking.totalAmount);
+    final revenue = monthBookings.fold(
+      0.0,
+      (total, booking) => total + booking.collectedAmount,
+    );
     final expenses =
         monthExpenses.fold(0.0, (total, expense) => total + expense.amount);
 
