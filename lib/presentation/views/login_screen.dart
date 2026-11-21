@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_colors.dart';
 import '../viewmodels/auth_view_model.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -40,9 +41,9 @@ class _LoginScreenState extends State<LoginScreen> {
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
                 colors: [
-                  Color(0xFFF4C47C),
-                  Color(0xFFE1ECEE),
-                   Color(0xFF0A1D21),
+                  Color(0xFFE8F4F1),
+                  Color(0xFFF5F8FC),
+                  Color(0xFFEAF1F5),
                 ],
               ),
             ),
@@ -51,7 +52,7 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: SingleChildScrollView(
                   padding: const EdgeInsets.all(24),
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(maxWidth: 300),
+                    constraints: const BoxConstraints(maxWidth: 380),
                     child: Card(
                       child: Padding(
                         padding: const EdgeInsets.all(16),
@@ -66,7 +67,10 @@ class _LoginScreenState extends State<LoginScreen> {
   child: ShaderMask(
     // Creates a colorful gradient effect across the text
     shaderCallback: (bounds) => const LinearGradient(
-      colors: [Color.fromARGB(255, 139, 94, 65), Color(0xFFC0392B), Color(0xFF2E7D32)],
+      colors: [
+        AppColors.brandPrimary,
+        AppColors.revenueDark,
+      ],
       begin: Alignment.topLeft,
       end: Alignment.bottomRight,
     ).createShader(bounds),
@@ -85,7 +89,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               textAlign: TextAlign.center,
                               'Sign in with your Google account',
                               style: theme.textTheme.bodyMedium?.copyWith(
-                                color: const Color.fromARGB(255, 233, 229, 227),
+                                color: const Color(0xFF64748B),
                                 height: 1.4,
                               ),
                             ),

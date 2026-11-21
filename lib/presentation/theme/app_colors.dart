@@ -1,33 +1,32 @@
 import 'package:flutter/material.dart';
 
-/// A premium, cohesive color palette inspired by deep coastal marine tones.
-/// Designed for high-contrast dark UIs with crisp, clean utility systems.
+/// Shared colors for the light, high-contrast guest-house registry UI.
 class AppColors {
   AppColors._(); // Prevents instantiation
 
   // ===========================================================================
   // Master Brand Identifiers
   // ===========================================================================
-  /// Deep Teal Canvas used for dominant brand surfaces and backgrounds.
+  /// Deep teal used for primary actions and branded controls.
   static const Color brandPrimary = Color(0xFF102A30);
   
-  /// Pale Ice White used for clean, high-contrast light pages or typography.
+  /// Soft, cool-white canvas used behind cards and page content.
   static const Color appBackground = Color(0xFFF0F5F5);
 
   // ===========================================================================
   // Dashboard 60/30/10 Palette (High-Contrast Sea Slate System)
   // ===========================================================================
-  /// 60% Dominant: Dark Abyss background for primary dashboard views.
-  static const Color dashboardCanvas = Color(0xFF0A1D21); 
+  /// Light canvas retained for older screen references.
+  static const Color dashboardCanvas = appBackground;
   
-  /// 30% Structural: Subdued Sea Slate color to elevate cards and containers.
-  static const Color dashboardCard = Color(0xFF1B3F47); 
+  /// White card surface retained for older screen references.
+  static const Color dashboardCard = Color(0xFFFFFFFF);
   
-  /// 10% Typography: Soft Marine layout text optimized for secondary reading.
-  static const Color dashboardText = Color(0xFFE1ECEE); 
+  /// High-contrast text retained for older screen references.
+  static const Color dashboardText = textStrong;
   
-  /// 10% Focal Point: Warm Butterscotch highlight for CTAs and interactive states.
-  static const Color dashboardAccent = Color.fromARGB(175, 171, 188, 134); 
+  /// Soft teal highlight retained for older screen references.
+  static const Color dashboardAccent = Color(0xFFD8EEE8);
 
   // ===========================================================================
   // Revenue System (Clean, Positive Coastal Greens)

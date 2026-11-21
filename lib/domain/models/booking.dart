@@ -14,6 +14,9 @@ class Booking {
     required this.guests,
     required this.totalAmount,
     required this.advancePaid,
+    this.balancePaid = 0,
+    this.isCancelled = false,
+    this.refundedAmount = 0,
   });
 
   final String id;
@@ -25,19 +28,25 @@ class Booking {
   final int guests;
   final double totalAmount;
   final double advancePaid;
+  final double balancePaid;
+  final bool isCancelled;
+  final double refundedAmount;
 
-  double get collectedAmount {
-    final total = totalAmount < 0 ? 0.0 : totalAmount;
-    return advancePaid.clamp(0.0, total).toDouble();
+  double get grossPaid => math.max(advancePaid + balancePaid, 0.0);
+
+  double get collectedAmount =>
+      (grossPaid - refundedAmount).clamp(0.0, math.max(totalAmount, 0.0));
+
+  double get remainingAmount {
+    if (isCancelled) return 0;
+    final remaining = totalAmount - grossPaid;
+    return remaining < 0.000001 ? 0.0 : math.max(remaining, 0.0);
   }
 
-  double get remainingAmount => math.max(totalAmount - collectedAmount, 0.0);
-
-  bool get isUpcoming {
-    final today = DateUtils.dateOnly(DateTime.now());
-    return DateUtils.dateOnly(checkIn).isAfter(today) ||
-        DateUtils.isSameDay(checkIn, today);
-  }
+  bool isPaymentDueOn(DateTime date) =>
+      !isCancelled &&
+      remainingAmount > 0 &&
+      !DateUtils.dateOnly(date).isBefore(DateUtils.dateOnly(checkIn));
 
   Map<String, dynamic> toMap() {
     return {
@@ -49,6 +58,9 @@ class Booking {
       'guests': guests,
       'totalAmount': totalAmount,
       'advancePaid': advancePaid,
+      'balancePaid': balancePaid,
+      'isCancelled': isCancelled,
+      'refundedAmount': refundedAmount,
     };
   }
 
@@ -76,6 +88,9 @@ class Booking {
       guests: (map['guests'] as num?)?.toInt() ?? 0,
       totalAmount: parseDouble(map['totalAmount']),
       advancePaid: parseDouble(map['advancePaid']),
+      balancePaid: parseDouble(map['balancePaid']),
+      isCancelled: map['isCancelled'] == true,
+      refundedAmount: parseDouble(map['refundedAmount']),
     );
   }
 }

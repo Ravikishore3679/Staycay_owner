@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
 
 import '../../data/repositories/registry_repository.dart';
 import '../../domain/models/booking.dart';
@@ -24,13 +25,23 @@ class RegistryViewModel extends ChangeNotifier {
   List<Booking>? _cachedSortedBookings;
   List<Expense>? _cachedSortedExpenses;
   List<Booking>? _cachedUpcomingBookings;
-  double? _cachedTotalRevenue;
-  double? _cachedTotalExpenditure;
   final Map<String, List<Booking>> _cachedBookingsByMonth = {};
   final Map<String, List<Expense>> _cachedExpensesByMonth = {};
 
   bool get isLoading => _isLoading;
   String? get errorMessage => _errorMessage;
+
+  String _formatError(Object error, {required String prefix}) {
+    if (error is FirebaseException) {
+      final code = error.code.trim();
+      final message = error.message?.trim();
+      if (message != null && message.isNotEmpty) {
+        return '$prefix ($code): $message';
+      }
+      return '$prefix ($code).';
+    }
+    return '$prefix: $error';
+  }
 
   Future<void> loadData() async {
     _isLoading = true;
@@ -69,11 +80,7 @@ class RegistryViewModel extends ChangeNotifier {
           });
         },
         onError: (Object e) {
-          if (e.toString().contains('permission-denied')) {
-            _errorMessage = null;
-          } else {
-            _errorMessage = 'Bookings sync failed: $e';
-          }
+          _errorMessage = _formatError(e, prefix: 'Bookings sync failed');
           notifyListeners();
         },
       );
@@ -88,20 +95,14 @@ class RegistryViewModel extends ChangeNotifier {
           });
         },
         onError: (Object e) {
-          if (e.toString().contains('permission-denied')) {
-            _errorMessage = null;
-          } else {
-            _errorMessage = 'Expenses sync failed: $e';
-          }
+          _errorMessage = _formatError(e, prefix: 'Expenses sync failed');
           notifyListeners();
         },
       );
 
       _errorMessage = null;
     } catch (e) {
-      if (!e.toString().contains('permission-denied')) {
-        _errorMessage = 'Failed to load Firebase data: $e';
-      }
+      _errorMessage = _formatError(e, prefix: 'Failed to load Firebase data');
     } finally {
       _isLoading = false;
       notifyListeners();
@@ -119,21 +120,19 @@ class RegistryViewModel extends ChangeNotifier {
     _cachedSortedBookings = null;
     _cachedSortedExpenses = null;
     _cachedUpcomingBookings = null;
-    _cachedTotalRevenue = null;
-    _cachedTotalExpenditure = null;
     _cachedBookingsByMonth.clear();
     _cachedExpensesByMonth.clear();
   }
 
   List<Booking> get bookings {
-    _cachedSortedBookings ??=
-        ([..._bookings]..sort((a, b) => b.checkIn.compareTo(a.checkIn)));
+    _cachedSortedBookings ??= ([..._bookings]
+      ..sort((a, b) => b.checkIn.compareTo(a.checkIn)));
     return _cachedSortedBookings!;
   }
 
   List<Expense> get expenses {
-    _cachedSortedExpenses ??=
-        ([..._expenses]..sort((a, b) => b.date.compareTo(a.date)));
+    _cachedSortedExpenses ??= ([..._expenses]
+      ..sort((a, b) => b.date.compareTo(a.date)));
     return _cachedSortedExpenses!;
   }
 
@@ -143,12 +142,15 @@ class RegistryViewModel extends ChangeNotifier {
     }
 
     final today = DateUtils.dateOnly(DateTime.now());
-    final upcoming = _bookings
-        .where((b) =>
-            DateUtils.dateOnly(b.checkIn).isAfter(today) ||
-            DateUtils.isSameDay(b.checkIn, today))
-        .toList()
-      ..sort((a, b) => a.checkIn.compareTo(b.checkIn));
+    final upcoming =
+        _bookings
+            .where(
+              (b) => !b.isCancelled &&
+                  (DateUtils.dateOnly(b.checkIn).isAfter(today) ||
+                      DateUtils.isSameDay(b.checkIn, today)),
+            )
+            .toList()
+          ..sort((a, b) => a.checkIn.compareTo(b.checkIn));
 
     _cachedUpcomingBookings = upcoming.take(3).toList();
     return _cachedUpcomingBookings!;
@@ -160,10 +162,11 @@ class RegistryViewModel extends ChangeNotifier {
       return _cachedBookingsByMonth[cacheKey]!;
     }
 
-    final result = _bookings
-        .where((b) => b.checkIn.year == year && b.checkIn.month == month)
-        .toList()
-      ..sort((a, b) => b.checkIn.compareTo(a.checkIn));
+    final result =
+        _bookings
+            .where((b) => b.checkIn.year == year && b.checkIn.month == month)
+            .toList()
+          ..sort((a, b) => b.checkIn.compareTo(a.checkIn));
 
     _cachedBookingsByMonth[cacheKey] = result;
     return result;
@@ -175,27 +178,14 @@ class RegistryViewModel extends ChangeNotifier {
       return _cachedExpensesByMonth[cacheKey]!;
     }
 
-    final result = _expenses
-        .where((e) => e.date.year == year && e.date.month == month)
-        .toList()
-      ..sort((a, b) => b.date.compareTo(a.date));
+    final result =
+        _expenses
+            .where((e) => e.date.year == year && e.date.month == month)
+            .toList()
+          ..sort((a, b) => b.date.compareTo(a.date));
 
     _cachedExpensesByMonth[cacheKey] = result;
     return result;
-  }
-
-  double get totalRevenue {
-    _cachedTotalRevenue ??= _bookings.fold(
-      0.0,
-      (total, booking) => total! + booking.collectedAmount,
-    );
-    return _cachedTotalRevenue!;
-  }
-
-  double get totalExpenditure {
-    _cachedTotalExpenditure ??=
-        _expenses.fold(0.0, (total, exp) => total! + exp.amount);
-    return _cachedTotalExpenditure!;
   }
 
   MonthlyReport getMonthlyReport(int year, int month) {
@@ -206,8 +196,10 @@ class RegistryViewModel extends ChangeNotifier {
       0.0,
       (total, booking) => total + booking.collectedAmount,
     );
-    final expenses =
-        monthExpenses.fold(0.0, (total, expense) => total + expense.amount);
+    final expenses = monthExpenses.fold(
+      0.0,
+      (total, expense) => total + expense.amount,
+    );
 
     return MonthlyReport(
       year: year,
@@ -222,7 +214,7 @@ class RegistryViewModel extends ChangeNotifier {
       await repository.addBooking(booking);
       _errorMessage = null;
     } catch (e) {
-      _errorMessage = 'Failed to add booking: $e';
+      _errorMessage = _formatError(e, prefix: 'Failed to add booking');
       notifyListeners();
       rethrow;
     }
@@ -233,18 +225,43 @@ class RegistryViewModel extends ChangeNotifier {
       await repository.updateBooking(booking);
       _errorMessage = null;
     } catch (e) {
-      _errorMessage = 'Failed to update booking: $e';
+      _errorMessage = _formatError(e, prefix: 'Failed to update booking');
       notifyListeners();
       rethrow;
     }
   }
 
-  Future<void> deleteBooking(String bookingId) async {
+  Future<Booking> recordBookingPayment(String bookingId, double amount) async {
     try {
-      await repository.deleteBooking(bookingId);
+      final booking = await repository.recordBookingPayment(bookingId, amount);
       _errorMessage = null;
+      return booking;
     } catch (e) {
-      _errorMessage = 'Failed to delete booking: $e';
+      _errorMessage = _formatError(e, prefix: 'Failed to record payment');
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<Booking> cancelBooking(String bookingId) async {
+    try {
+      final booking = await repository.cancelBooking(bookingId);
+      _errorMessage = null;
+      return booking;
+    } catch (e) {
+      _errorMessage = _formatError(e, prefix: 'Failed to cancel booking');
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<Booking> refundBooking(String bookingId) async {
+    try {
+      final booking = await repository.refundBooking(bookingId);
+      _errorMessage = null;
+      return booking;
+    } catch (e) {
+      _errorMessage = _formatError(e, prefix: 'Failed to record refund');
       notifyListeners();
       rethrow;
     }
@@ -255,29 +272,7 @@ class RegistryViewModel extends ChangeNotifier {
       await repository.addExpense(expense);
       _errorMessage = null;
     } catch (e) {
-      _errorMessage = 'Failed to add expense: $e';
-      notifyListeners();
-      rethrow;
-    }
-  }
-
-  Future<void> updateExpense(Expense expense) async {
-    try {
-      await repository.updateExpense(expense);
-      _errorMessage = null;
-    } catch (e) {
-      _errorMessage = 'Failed to update expense: $e';
-      notifyListeners();
-      rethrow;
-    }
-  }
-
-  Future<void> deleteExpense(String expenseId) async {
-    try {
-      await repository.deleteExpense(expenseId);
-      _errorMessage = null;
-    } catch (e) {
-      _errorMessage = 'Failed to delete expense: $e';
+      _errorMessage = _formatError(e, prefix: 'Failed to add expense');
       notifyListeners();
       rethrow;
     }

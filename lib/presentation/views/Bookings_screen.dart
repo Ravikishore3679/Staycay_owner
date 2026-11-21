@@ -7,12 +7,14 @@ class BookingsScreen extends StatefulWidget {
     required this.guestHouseName,
     required this.guestHouseAddress,
     required this.guestHousePhotoBytes,
+    this.initialCheckIn,
   });
 
   final RegistryViewModel controller;
   final String guestHouseName;
   final String guestHouseAddress;
   final Uint8List? guestHousePhotoBytes;
+  final DateTime? initialCheckIn;
 
   @override
   State<BookingsScreen> createState() => _BookingsScreenState();
@@ -45,8 +47,22 @@ class _BookingsScreenState extends State<BookingsScreen> {
 
   DateTime? _checkIn;
   DateTime? _checkOut;
+  bool _checkoutManuallySelected = false;
 
-  Widget _datePickerThemeWrapper(BuildContext context, Widget? child) {
+  static DateTime _nextDay(DateTime date) =>
+      DateTime(date.year, date.month, date.day + 1);
+
+  @override
+  void initState() {
+    super.initState();
+    final initialCheckIn = widget.initialCheckIn;
+    if (initialCheckIn != null) {
+      _checkIn = DateUtils.dateOnly(initialCheckIn);
+      _checkOut = _nextDay(_checkIn!);
+    }
+  }
+
+  static Widget _datePickerThemeWrapper(BuildContext context, Widget? child) {
     final base = Theme.of(context);
     final scheme = ColorScheme.fromSeed(
       seedColor: base.colorScheme.primary,
@@ -100,22 +116,30 @@ class _BookingsScreenState extends State<BookingsScreen> {
     final selected = await showDatePicker(
       context: context,
       initialDate: initialDate,
-      firstDate: DateTime(now.year - 1),
-      lastDate: DateTime(now.year + 5),
+      firstDate: DateTime(
+        initialDate.year < now.year - 1 ? initialDate.year : now.year - 1,
+      ),
+      lastDate: DateTime(
+        (initialDate.year > now.year + 5 ? initialDate.year : now.year + 5) + 1,
+      ),
       builder: (pickerContext, child) =>
           _datePickerThemeWrapper(pickerContext, child),
     );
 
-    if (selected == null) return;
+    if (selected == null || !mounted) return;
 
     setState(() {
       if (isCheckIn) {
         _checkIn = selected;
-        if (_checkOut != null && !_checkOut!.isAfter(_checkIn!)) {
-          _checkOut = null;
+        if (!_checkoutManuallySelected ||
+            _checkOut == null ||
+            !_checkOut!.isAfter(selected)) {
+          _checkOut = _nextDay(selected);
+          _checkoutManuallySelected = false;
         }
       } else {
         _checkOut = selected;
+        _checkoutManuallySelected = true;
       }
     });
   }
@@ -130,63 +154,76 @@ class _BookingsScreenState extends State<BookingsScreen> {
     setState(() {
       _checkIn = null;
       _checkOut = null;
+      _checkoutManuallySelected = false;
     });
   }
 
-  double _toAmount(String value) => double.tryParse(value.trim()) ?? 0.0;
+  static double _toAmount(String value) => double.tryParse(value.trim()) ?? 0.0;
+
+  static String? _validateGuests(String? value) {
+    final guests = int.tryParse(value?.trim() ?? '');
+    if (guests == null) return 'Guests count is required';
+    if (guests < 1 || guests > 99) return 'Enter between 1 and 99 guests';
+    return null;
+  }
 
   Future<Uint8List> _buildBookingReceiptPdf(Booking booking) async {
     final pdf = pw.Document();
     final photoBytes = widget.guestHousePhotoBytes;
 
-   
-pw.Widget _buildModernRow(
-  String label, 
-  String value, 
-  PdfColor valueColor, 
-  bool hasBg, 
-  bool isBold,
-) {
-  return pw.Container(
-    padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 7),
-    decoration: pw.BoxDecoration(
-      color: hasBg ? PdfColors.grey50 : null,
-      border: const pw.Border(
-        bottom: pw.BorderSide(color: PdfColors.grey200, width: 0.5),
-      ),
-    ),
-    child: pw.Row(
-      mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-      children: [
-        pw.Text(
-          label,
-          style: const pw.TextStyle(color: PdfColors.grey600, fontSize: 10),
-        ),
-        pw.Text(
-          value,
-          style: pw.TextStyle(
-            color: valueColor,
-            fontSize: 10,
-            fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
+    pw.Widget buildModernRow(
+      String label,
+      String value,
+      PdfColor valueColor,
+      bool hasBg,
+      bool isBold,
+    ) {
+      return pw.Container(
+        padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        decoration: pw.BoxDecoration(
+          color: hasBg ? PdfColors.grey50 : null,
+          border: const pw.Border(
+            bottom: pw.BorderSide(color: PdfColors.grey200, width: 0.5),
           ),
         ),
-      ],
-    ),
-  );
-}
+        child: pw.Row(
+          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+          children: [
+            pw.Text(
+              label,
+              style: const pw.TextStyle(color: PdfColors.grey600, fontSize: 10),
+            ),
+            pw.Text(
+              value,
+              style: pw.TextStyle(
+                color: valueColor,
+                fontSize: 10,
+                fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
 
-   pdf.addPage(
+    pdf.addPage(
       pw.Page(
-        margin: const pw.EdgeInsets.all(32), // Increased margin for an elegant border breathing room
+        margin: const pw.EdgeInsets.all(
+          32,
+        ), // Increased margin for an elegant border breathing room
         build: (context) {
           // Professional executive color palette
-          const primaryColor = PdfColors.blueGrey900;    // Deep Navy/Slate for headers
-          const accentColor = PdfColors.teal700;        // Muted teal for highlight lines & tags
-          const textDark = PdfColors.grey900;           // Crisp readable text
-          const textMuted = PdfColors.grey600;          // Subtle secondary metadata
+          const primaryColor =
+              PdfColors.blueGrey900; // Deep Navy/Slate for headers
+          const accentColor =
+              PdfColors.teal700; // Muted teal for highlight lines & tags
+          const textDark = PdfColors.grey900; // Crisp readable text
+          const textMuted = PdfColors.grey600; // Subtle secondary metadata
           //const bgLight = PdfColors.grey50;             // Zebra stripe background
-          const bgHeader = PdfColors.blueGrey50;        // Soft layout header background
-          const alertColor = PdfColors.deepOrange800;   // Contrast color for remaining dues
+          const bgHeader =
+              PdfColors.blueGrey50; // Soft layout header background
+          const alertColor =
+              PdfColors.deepOrange800; // Contrast color for remaining dues
 
           return pw.Column(
             crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -197,7 +234,9 @@ pw.Widget _buildModernRow(
                 padding: const pw.EdgeInsets.all(16),
                 decoration: pw.BoxDecoration(
                   color: bgHeader,
-                  borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+                  borderRadius: const pw.BorderRadius.all(
+                    pw.Radius.circular(8),
+                  ),
                 ),
                 child: pw.Row(
                   crossAxisAlignment: pw.CrossAxisAlignment.start,
@@ -209,7 +248,10 @@ pw.Widget _buildModernRow(
                         margin: const pw.EdgeInsets.only(right: 16),
                         decoration: pw.BoxDecoration(
                           borderRadius: pw.BorderRadius.circular(8),
-                          border: pw.Border.all(color: PdfColors.grey300, width: 1),
+                          border: pw.Border.all(
+                            color: PdfColors.grey300,
+                            width: 1,
+                          ),
                         ),
                         child: pw.ClipRRect(
                           horizontalRadius: 7,
@@ -245,31 +287,44 @@ pw.Widget _buildModernRow(
                           ],
                           pw.SizedBox(height: 8),
                           pw.Container(
-                            height: 1, 
+                            height: 1,
                             color: PdfColors.grey300,
-                            margin: const pw.EdgeInsets.only(bottom: 8)
+                            margin: const pw.EdgeInsets.only(bottom: 8),
                           ),
                           pw.Row(
-                            mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                            mainAxisAlignment:
+                                pw.MainAxisAlignment.spaceBetween,
                             children: [
                               pw.Column(
                                 crossAxisAlignment: pw.CrossAxisAlignment.start,
                                 children: [
                                   pw.Text(
                                     'Receipt ID: ${booking.id}',
-                                    style: pw.TextStyle(color: textDark, fontSize: 9, fontWeight: pw.FontWeight.bold),
+                                    style: pw.TextStyle(
+                                      color: textDark,
+                                      fontSize: 9,
+                                      fontWeight: pw.FontWeight.bold,
+                                    ),
                                   ),
                                   pw.Text(
                                     'Issued On: ${_formatDate(DateTime.now())}',
-                                    style: const pw.TextStyle(color: textMuted, fontSize: 9),
+                                    style: const pw.TextStyle(
+                                      color: textMuted,
+                                      fontSize: 9,
+                                    ),
                                   ),
                                 ],
                               ),
                               pw.Container(
-                                padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                padding: const pw.EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 4,
+                                ),
                                 decoration: const pw.BoxDecoration(
                                   color: primaryColor,
-                                  borderRadius: pw.BorderRadius.all(pw.Radius.circular(4)),
+                                  borderRadius: pw.BorderRadius.all(
+                                    pw.Radius.circular(4),
+                                  ),
                                 ),
                                 child: pw.Text(
                                   'BOOKING RECEIPT',
@@ -289,9 +344,9 @@ pw.Widget _buildModernRow(
                   ],
                 ),
               ),
-              
+
               pw.SizedBox(height: 24),
-              
+
               // --- DETAILS SECTION TITLE ---
               pw.Text(
                 'RESERVATION DETAILS',
@@ -308,15 +363,65 @@ pw.Widget _buildModernRow(
 
               // --- GRID/TABLE DATA LIST ---
               // Helper closures for rendering elegant alternate rows
-              _buildModernRow('Guest Name', booking.name, textDark, false, false),
-              _buildModernRow('Phone', booking.phone, textDark, true, false),
-              _buildModernRow('Aadhaar', booking.aadhaar, textDark, false, false),
-              _buildModernRow('Check-in', _formatDate(booking.checkIn),textDark, true, false),
-              _buildModernRow('Check-out', _formatDate(booking.checkOut),textDark, false, false),
-              _buildModernRow('Guests', booking.guests.toString(), textDark, false, false),
-              _buildModernRow('Total Amount', _currency(booking.totalAmount), textDark, true, false),
-              _buildModernRow('Advance Paid', _currency(booking.advancePaid), accentColor, false, true),
-              _buildModernRow(
+              buildModernRow(
+                'Guest Name',
+                booking.name,
+                textDark,
+                false,
+                false,
+              ),
+              buildModernRow('Phone', booking.phone, textDark, true, false),
+              buildModernRow(
+                'Aadhaar',
+                booking.aadhaar,
+                textDark,
+                false,
+                false,
+              ),
+              buildModernRow(
+                'Check-in',
+                _formatDate(booking.checkIn),
+                textDark,
+                true,
+                false,
+              ),
+              buildModernRow(
+                'Check-out',
+                _formatDate(booking.checkOut),
+                textDark,
+                false,
+                false,
+              ),
+              buildModernRow(
+                'Guests',
+                booking.guests.toString(),
+                textDark,
+                false,
+                false,
+              ),
+              buildModernRow(
+                'Total Amount',
+                _currency(booking.totalAmount),
+                textDark,
+                true,
+                false,
+              ),
+              buildModernRow(
+                'Advance Paid',
+                _currency(booking.advancePaid),
+                accentColor,
+                false,
+                true,
+              ),
+              if (booking.balancePaid > 0)
+                buildModernRow(
+                  'Balance Paid',
+                  _currency(booking.balancePaid),
+                  accentColor,
+                  false,
+                  true,
+                ),
+              buildModernRow(
                 'Remaining Amount',
                 _currency(booking.remainingAmount),
                 alertColor,
@@ -325,7 +430,7 @@ pw.Widget _buildModernRow(
               ),
 
               pw.SizedBox(height: 28),
-              
+
               // --- HOUSE RULES SECTION ---
               pw.Text(
                 'HOUSE & STAY RULES',
@@ -339,7 +444,7 @@ pw.Widget _buildModernRow(
               pw.SizedBox(height: 6),
               pw.Container(height: 1.5, color: PdfColors.grey300),
               pw.SizedBox(height: 10),
-              
+
               ..._houseRules.map(
                 (rule) => pw.Padding(
                   padding: const pw.EdgeInsets.only(bottom: 8),
@@ -380,7 +485,13 @@ pw.Widget _buildModernRow(
 
   // Visual layout helper method for neat data alignments
   // ignore: unused_element
-  pw.Widget _buildModernRow(String label, String value, [PdfColor valueColor = PdfColors.grey900, bool hasBg = false, bool isBold = false]) {
+  pw.Widget _buildModernRow(
+    String label,
+    String value, [
+    PdfColor valueColor = PdfColors.grey900,
+    bool hasBg = false,
+    bool isBold = false,
+  ]) {
     return pw.Container(
       padding: const pw.EdgeInsets.symmetric(horizontal: 10, vertical: 7),
       decoration: pw.BoxDecoration(
@@ -394,10 +505,7 @@ pw.Widget _buildModernRow(
         children: [
           pw.Text(
             label,
-            style: const pw.TextStyle(
-              color: PdfColors.grey600,
-              fontSize: 10,
-            ),
+            style: const pw.TextStyle(color: PdfColors.grey600, fontSize: 10),
           ),
           pw.Text(
             value,
@@ -411,7 +519,6 @@ pw.Widget _buildModernRow(
       ),
     );
   }
-
 
   Future<void> _downloadBookingReceiptPdf(Booking booking) async {
     try {
@@ -469,18 +576,15 @@ pw.Widget _buildModernRow(
                       width: double.infinity,
                       padding: const EdgeInsets.all(12),
                       decoration: BoxDecoration(
-                        color: Theme.of(dialogContext)
-                            .colorScheme
-                            .primaryContainer,
+                        color: Theme.of(
+                          dialogContext,
+                        ).colorScheme.primaryContainer,
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text(
-                            widget.guestHouseName,
-                            
-                          ),
+                          Text(widget.guestHouseName),
                           const SizedBox(height: 4),
                           Text('Receipt ID: ${booking.id}'),
                           Text('Issued On: ${_formatDate(DateTime.now())}'),
@@ -511,6 +615,11 @@ pw.Widget _buildModernRow(
                       label: 'Advance Paid',
                       value: _currency(booking.advancePaid),
                     ),
+                    if (booking.balancePaid > 0)
+                      _ReceiptRow(
+                        label: 'Balance Paid',
+                        value: _currency(booking.balancePaid),
+                      ),
                     _ReceiptRow(
                       label: 'Remaining Amount',
                       value: _currency(booking.remainingAmount),
@@ -524,7 +633,6 @@ pw.Widget _buildModernRow(
                         fontWeight: FontWeight.w700,
                         color: Color.fromARGB(255, 10, 52, 6),
                       ),
-                    
                     ),
                     const SizedBox(height: 8),
                     ..._houseRules.map(
@@ -564,7 +672,11 @@ pw.Widget _buildModernRow(
     );
   }
 
-  Future<void> _editBooking(Booking booking) async {
+  static Future<void> _editBooking(
+    BuildContext context,
+    RegistryViewModel controller,
+    Booking booking,
+  ) async {
     final formKey = GlobalKey<FormState>();
     final nameCtrl = TextEditingController(text: booking.name);
     final phoneCtrl = TextEditingController(text: booking.phone);
@@ -578,15 +690,17 @@ pw.Widget _buildModernRow(
     );
     var checkIn = booking.checkIn;
     var checkOut = booking.checkOut;
+    var saving = false;
+    String? saveError;
 
-    await showDialog<void>(
+    final route = DialogRoute<void>(
       context: context,
       builder: (dialogContext) {
         return StatefulBuilder(
           builder: (dialogBuilderContext, setDialogState) {
             final total = _toAmount(totalCtrl.text);
             final advance = _toAmount(advanceCtrl.text);
-            final remaining = total - advance;
+            final remaining = total - advance - booking.balancePaid;
 
             Future<void> pickDate({
               required BuildContext pickerContext,
@@ -596,13 +710,20 @@ pw.Widget _buildModernRow(
               final selected = await showDatePicker(
                 context: pickerContext,
                 initialDate: isCheckIn ? checkIn : checkOut,
-                firstDate: DateTime(now.year - 1),
-                lastDate: DateTime(now.year + 5),
+                firstDate: DateTime(
+                  checkIn.year < now.year - 1 ? checkIn.year : now.year - 1,
+                ),
+                lastDate: DateTime(
+                  (checkOut.year > now.year + 5
+                          ? checkOut.year
+                          : now.year + 5) +
+                      1,
+                ),
                 builder: (context, child) =>
                     _datePickerThemeWrapper(context, child),
               );
-              
-              if (selected == null) return;
+
+              if (selected == null || !dialogBuilderContext.mounted) return;
               setDialogState(() {
                 if (isCheckIn) {
                   checkIn = selected;
@@ -663,11 +784,12 @@ pw.Widget _buildModernRow(
                           LengthLimitingTextInputFormatter(12),
                         ],
                         style: const TextStyle(color: Color(0xFF0F172A)),
-                        decoration: const InputDecoration(labelText: 'Aadhaar'),
+                        decoration: const InputDecoration(
+                          labelText: 'Aadhaar (optional)',
+                        ),
                         validator: (value) {
                           final v = value?.trim() ?? '';
-                          if (v.isEmpty) return 'Aadhaar is required';
-                          if (v.length != 12) {
+                          if (v.isNotEmpty && v.length != 12) {
                             return 'Aadhaar must be 12 digits';
                           }
                           return null;
@@ -711,12 +833,7 @@ pw.Widget _buildModernRow(
                         decoration: const InputDecoration(
                           labelText: 'No. of Guests',
                         ),
-                        validator: (value) {
-                          final v = int.tryParse(value?.trim() ?? '');
-                          if (v == null) return 'Guests count is required';
-                          if (v <= 0) return 'Guests must be at least 1';
-                          return null;
-                        },
+                        validator: _validateGuests,
                       ),
                       const SizedBox(height: 10),
                       TextFormField(
@@ -742,7 +859,7 @@ pw.Widget _buildModernRow(
                         keyboardType: const TextInputType.numberWithOptions(
                           decimal: true,
                         ),
-                        style: const TextStyle(color:Color(0xFF0F172A)),
+                        style: const TextStyle(color: Color(0xFF0F172A)),
                         decoration: const InputDecoration(
                           labelText: 'Advance Paid',
                         ),
@@ -751,77 +868,105 @@ pw.Widget _buildModernRow(
                           final t = double.tryParse(totalCtrl.text.trim());
                           if (a == null) return 'Advance amount is required';
                           if (a < 0) return 'Advance cannot be negative';
-                          if (t != null && a > t) {
-                            return 'Advance cannot exceed total';
+                          if (t != null &&
+                              a + booking.balancePaid > t + 0.000001) {
+                            return 'Payments cannot exceed total';
                           }
                           return null;
                         },
                         onChanged: (_) => setDialogState(() {}),
                       ),
+                      if (booking.balancePaid > 0) ...[
+                        const SizedBox(height: 8),
+                        Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Balance paid: ${_currency(booking.balancePaid)}',
+                          ),
+                        ),
+                      ],
                       const SizedBox(height: 8),
                       Align(
                         alignment: Alignment.centerLeft,
                         child: Text(
                           'Remaining: ${_currency(remaining)}',
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
+                          style: Theme.of(context).textTheme.bodyMedium
                               ?.copyWith(fontWeight: FontWeight.w700),
                         ),
                       ),
+                      if (saveError != null)
+                        Text(
+                          saveError!,
+                          style: TextStyle(
+                            color: Theme.of(context).colorScheme.error,
+                          ),
+                        ),
                     ],
                   ),
                 ),
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.of(dialogContext).pop(),
+                  onPressed: saving
+                      ? null
+                      : () => Navigator.of(dialogContext).pop(),
                   child: const Text('Cancel'),
                 ),
                 FilledButton(
-                  onPressed: () async {
-                    if (!(formKey.currentState?.validate() ?? false)) return;
-                    if (!checkOut.isAfter(checkIn)) {
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text(
-                            'Check-out must be after check-in date',
-                          ),
-                        ),
-                      );
-                      return;
-                    }
+                  onPressed: saving
+                      ? null
+                      : () async {
+                          if (!(formKey.currentState?.validate() ?? false)) {
+                            return;
+                          }
+                          if (!checkOut.isAfter(checkIn)) {
+                            setDialogState(() {
+                              saveError =
+                                  'Check-out must be after check-in date';
+                            });
+                            return;
+                          }
 
-                    try {
-                      final messenger = ScaffoldMessenger.of(context);
-                      await widget.controller.updateBooking(
-                        Booking(
-                          id: booking.id,
-                          name: nameCtrl.text.trim(),
-                          phone: phoneCtrl.text.trim(),
-                          aadhaar: aadhaarCtrl.text.trim(),
-                          checkIn: checkIn,
-                          checkOut: checkOut,
-                          guests: int.parse(guestsCtrl.text.trim()),
-                          totalAmount: _toAmount(totalCtrl.text),
-                          advancePaid: _toAmount(advanceCtrl.text),
-                        ),
-                      );
+                          setDialogState(() {
+                            saving = true;
+                            saveError = null;
+                          });
+                          try {
+                            final messenger = ScaffoldMessenger.of(context);
+                            await controller.updateBooking(
+                              Booking(
+                                id: booking.id,
+                                name: nameCtrl.text.trim(),
+                                phone: phoneCtrl.text.trim(),
+                                aadhaar: aadhaarCtrl.text.trim(),
+                                checkIn: checkIn,
+                                checkOut: checkOut,
+                                guests: int.parse(guestsCtrl.text.trim()),
+                                totalAmount: _toAmount(totalCtrl.text),
+                                advancePaid: _toAmount(advanceCtrl.text),
+                                balancePaid: booking.balancePaid,
+                              ),
+                            );
 
-                      if (!dialogContext.mounted || !mounted) return;
-                      Navigator.of(dialogContext).pop();
-                      messenger.showSnackBar(
-                        const SnackBar(
-                          content: Text('Booking updated successfully'),
-                        ),
-                      );
-                    } catch (e) {
-                      if (!mounted) return;
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(content: Text('Failed to update booking: $e')),
-                      );
-                    }
-                  },
+                            if (!dialogContext.mounted || !context.mounted) {
+                              return;
+                            }
+                            Navigator.of(dialogContext).pop();
+                            messenger.showSnackBar(
+                              const SnackBar(
+                                content: Text('Booking updated successfully'),
+                              ),
+                            );
+                          } catch (e) {
+                            if (!dialogContext.mounted || !context.mounted) {
+                              return;
+                            }
+                            setDialogState(() {
+                              saving = false;
+                              saveError = 'Failed to update booking: $e';
+                            });
+                          }
+                        },
                   child: const Text('Save'),
                 ),
               ],
@@ -830,6 +975,8 @@ pw.Widget _buildModernRow(
         );
       },
     );
+    await Navigator.of(context, rootNavigator: true).push(route);
+    await route.completed;
 
     nameCtrl.dispose();
     phoneCtrl.dispose();
@@ -841,25 +988,70 @@ pw.Widget _buildModernRow(
 
   @override
   Widget build(BuildContext context) {
-    final bookings = widget.controller.bookings;
     final total = _toAmount(_totalCtrl.text);
     final advance = _toAmount(_advanceCtrl.text);
     final remaining = total - advance;
-    final nightTheme = _nightTabTheme(context);
+    final baseTheme = Theme.of(context);
+    final lightScheme =
+        ColorScheme.fromSeed(
+          seedColor: AppColors.brandPrimary,
+          brightness: Brightness.light,
+        ).copyWith(
+          primary: AppColors.brandPrimary,
+          surface: Colors.white,
+          onSurface: AppColors.textStrong,
+          onSurfaceVariant: const Color(0xFF64748B),
+        );
+    final bookingTheme = baseTheme.copyWith(
+      colorScheme: lightScheme,
+      scaffoldBackgroundColor: AppColors.appBackground,
+      textTheme: baseTheme.textTheme.apply(
+        bodyColor: AppColors.textStrong,
+        displayColor: AppColors.textStrong,
+      ),
+      cardTheme: CardThemeData(
+        color: Colors.white,
+        elevation: 0,
+        margin: const EdgeInsets.only(bottom: 10),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(18),
+          side: const BorderSide(color: Color(0xFFE2E8F0)),
+        ),
+      ),
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: const Color(0xFFF8FAFC),
+        isDense: true,
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 14,
+          vertical: 15,
+        ),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(
+            color: AppColors.brandPrimary,
+            width: 1.5,
+          ),
+        ),
+      ),
+    );
 
     return Theme(
-      data: nightTheme,
+      data: bookingTheme,
       child: Container(
-        color: Color(0xFF0A1D21),
+        color: AppColors.appBackground,
         child: ListView(
           padding: const EdgeInsets.all(16),
           children: [
-            _SectionTitle(
-              icon: Icons.edit_note,
-              title: 'New Booking Entry',
-              subtitle: 'Add guest details with payment split',
-            ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 8),
             Card(
               child: Padding(
                 padding: const EdgeInsets.all(16),
@@ -867,10 +1059,18 @@ pw.Widget _buildModernRow(
                   key: _formKey,
                   child: Column(
                     children: [
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Guest details',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                      const SizedBox(height: 14),
                       TextFormField(
                         controller: _nameCtrl,
                         textCapitalization: TextCapitalization.words,
-                        style: const TextStyle(color: AppColors.dashboardText),
                         decoration: const InputDecoration(
                           labelText: 'Name',
                           hintText: 'Guest full name',
@@ -893,7 +1093,6 @@ pw.Widget _buildModernRow(
                           FilteringTextInputFormatter.digitsOnly,
                           LengthLimitingTextInputFormatter(10),
                         ],
-                        style: const TextStyle(color: AppColors.dashboardText),
                         decoration: const InputDecoration(
                           labelText: 'Phone',
                           hintText: '10-digit mobile number',
@@ -914,20 +1113,27 @@ pw.Widget _buildModernRow(
                           FilteringTextInputFormatter.digitsOnly,
                           LengthLimitingTextInputFormatter(12),
                         ],
-                        style: const TextStyle(color: AppColors.dashboardText),
                         decoration: const InputDecoration(
-                          labelText: 'Aadhaar',
-                          hintText: '12-digit Aadhaar number',
+                          labelText: 'Aadhaar (optional)',
+                          hintText: '12-digit Aadhaar number (optional)',
                           prefixIcon: Icon(Icons.badge_outlined),
                         ),
                         validator: (value) {
                           final v = value?.trim() ?? '';
-                          if (v.isEmpty) return 'Aadhaar is required';
-                          if (v.length != 12) {
+                          if (v.isNotEmpty && v.length != 12) {
                             return 'Aadhaar must be 12 digits';
                           }
                           return null;
                         },
+                      ),
+                      const SizedBox(height: 12),
+                      Align(
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          'Stay and payment',
+                          style: Theme.of(context).textTheme.titleMedium
+                              ?.copyWith(fontWeight: FontWeight.w700),
+                        ),
                       ),
                       const SizedBox(height: 12),
                       Row(
@@ -956,7 +1162,6 @@ pw.Widget _buildModernRow(
                             child: TextFormField(
                               controller: _guestsCtrl,
                               keyboardType: TextInputType.number,
-                              style: const TextStyle(color: AppColors.dashboardText),
                               inputFormatters: [
                                 FilteringTextInputFormatter.digitsOnly,
                                 LengthLimitingTextInputFormatter(2),
@@ -965,14 +1170,7 @@ pw.Widget _buildModernRow(
                                 labelText: 'No. of Guests',
                                 prefixIcon: Icon(Icons.groups_2_outlined),
                               ),
-                              validator: (value) {
-                                final v = int.tryParse(value?.trim() ?? '');
-                                if (v == null) {
-                                  return 'Guests count is required';
-                                }
-                                if (v <= 0) return 'Guests must be at least 1';
-                                return null;
-                              },
+                              validator: _validateGuests,
                             ),
                           ),
                           const SizedBox(width: 12),
@@ -983,7 +1181,6 @@ pw.Widget _buildModernRow(
                                   const TextInputType.numberWithOptions(
                                     decimal: true,
                                   ),
-                              style: const TextStyle(color: AppColors.dashboardText),
                               decoration: const InputDecoration(
                                 labelText: 'Total Amount',
                                 prefixText: 'Rs ',
@@ -1011,14 +1208,15 @@ pw.Widget _buildModernRow(
                                   const TextInputType.numberWithOptions(
                                     decimal: true,
                                   ),
-                              style: const TextStyle(color: AppColors.dashboardText),
                               decoration: const InputDecoration(
                                 labelText: 'Advance Paid',
                                 prefixText: 'Rs ',
                               ),
                               validator: (value) {
                                 final a = double.tryParse(value?.trim() ?? '');
-                                final t = double.tryParse(_totalCtrl.text.trim());
+                                final t = double.tryParse(
+                                  _totalCtrl.text.trim(),
+                                );
                                 if (a == null) {
                                   return 'Advance amount is required';
                                 }
@@ -1044,9 +1242,7 @@ pw.Widget _buildModernRow(
                       Row(
                         children: [
                           Expanded(
-                            
                             child: FilledButton.icon(
-                              
                               onPressed: () async {
                                 final messenger = ScaffoldMessenger.of(context);
                                 if (!(_formKey.currentState?.validate() ??
@@ -1137,86 +1333,6 @@ pw.Widget _buildModernRow(
                 ),
               ),
             ),
-            const SizedBox(height: 20),
-            _SectionTitle(
-              icon: Icons.list_alt,
-              title: 'Current & Past Bookings',
-              subtitle: 'All booking records',
-            ),
-            const SizedBox(height: 12),
-            if (bookings.isEmpty)
-              const _EmptyCard(message: 'No bookings found.')
-            else
-              ...bookings.map(
-                (booking) => Card(
-                  child: ExpansionTile(
-                    tilePadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 2,
-                    ),
-                    childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-                    leading: CircleAvatar(
-                      backgroundColor: booking.isUpcoming
-                          ? const Color.fromARGB(255, 209, 225, 215)
-                          : AppColors.historyIndicator,
-                      child: Icon(
-                        booking.isUpcoming
-                            ? Icons.event_available
-                            : Icons.history,
-                        color: booking.isUpcoming
-                            ? const Color.fromARGB(255, 10, 52, 6)
-                            : const Color.fromARGB(255, 10, 52, 6),
-                      ),
-                    ),
-                    title: Text(booking.name),
-                    
-                    subtitle: Text(
-                      '${_formatDate(booking.checkIn)}  ->  ${_formatDate(booking.checkOut)}',
-                      
-                    ),
-                    trailing: Text(
-                      _currency(booking.totalAmount),
-                      style: Theme.of(context).textTheme.titleSmall?.copyWith(
-                        fontWeight: FontWeight.bold,
-                        
-                      ),
-                    ),
-                    
-                    children: [
-                      _BookingMetaRow(label: 'Phone', value: booking.phone, labelColor: AppColors.dashboardText, valueColor: AppColors.dashboardText),
-                      _BookingMetaRow(label: 'Aadhaar', value: booking.aadhaar, labelColor: AppColors.dashboardText, valueColor: AppColors.dashboardText),
-                      _BookingMetaRow(
-                        label: 'Guests',
-                        value: booking.guests.toString(),
-                        labelColor: AppColors.dashboardText,
-                        valueColor: AppColors.dashboardText,
-                      ),
-                      _BookingMetaRow(
-                        label: 'Advance Paid',
-                        value: _currency(booking.advancePaid),
-                        labelColor: AppColors.dashboardText,
-                        valueColor: AppColors.dashboardText,
-                      ),
-                      _BookingMetaRow(
-                        label: 'Remaining',
-                        value: _currency(booking.remainingAmount),
-                        labelColor: AppColors.dashboardText,
-                        valueColor: AppColors.dashboardText,
-                      ),
-                      const SizedBox(height: 10),
-                      Row(
-                        children: [
-                          TextButton.icon(
-                            onPressed: () => _editBooking(booking),
-                            icon: const Icon(Icons.edit_outlined, size: 18),
-                            label: const Text('Edit'),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
           ],
         ),
       ),

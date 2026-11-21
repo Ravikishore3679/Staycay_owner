@@ -1,5 +1,5 @@
 import 'dart:async';
-import 'dart:math' as math;
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,6 +9,7 @@ import 'package:printing/printing.dart';
 
 import '../../domain/models/booking.dart';
 import '../../domain/models/expense.dart';
+import '../../domain/models/monthly_report.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/auth_view_model.dart';
 import '../viewmodels/registry_view_model.dart';
@@ -17,12 +18,10 @@ part 'Dashboard_screen.dart';
 part 'Bookings_screen.dart';
 part 'expenses_screen.dart';
 part 'reports_screen.dart';
-
-
+part 'add_screen.dart';
 
 // -----------------------------
 // Presentation Layer
-
 
 class RegistryHomePage extends StatefulWidget {
   const RegistryHomePage({
@@ -49,15 +48,11 @@ class RegistryHomePage extends StatefulWidget {
 class _RegistryHomePageState extends State<RegistryHomePage> {
   late final RegistryViewModel _registryViewModel;
   late final AuthViewModel _authViewModel;
-  late final Timer _clockTimer;
   int _index = 0;
-  DateTime _now = DateTime.now();
-
   Future<void> _editGuestHouseName() async {
     final controller = TextEditingController(text: widget.guestHouseName);
 
     final newName = await showDialog<String>(
-
       context: context,
       builder: (dialogContext) {
         final formKey = GlobalKey<FormState>();
@@ -157,18 +152,25 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
     super.initState();
     _registryViewModel = widget.registryViewModel;
     _authViewModel = widget.authViewModel;
-    _clockTimer = Timer.periodic(const Duration(seconds: 30), (_) {
-      if (!mounted) return;
-      setState(() {
-        _now = DateTime.now();
-      });
-    });
   }
 
-  @override
-  void dispose() {
-    _clockTimer.cancel();
-    super.dispose();
+  void _openBookingForDate(DateTime date) {
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (context) => Scaffold(
+          appBar: AppBar(title: const Text('Add booking')),
+          body: SafeArea(
+            child: BookingsScreen(
+              controller: _registryViewModel,
+              guestHouseName: widget.guestHouseName,
+              guestHouseAddress: widget.guestHouseAddress,
+              guestHousePhotoBytes: widget.guestHousePhotoBytes,
+              initialCheckIn: date,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 
   @override
@@ -177,41 +179,41 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
       animation: _registryViewModel,
       builder: (context, _) {
         final pages = [
-          DashboardScreen(controller: _registryViewModel),
-          BookingsScreen(
+          DashboardScreen(
+            controller: _registryViewModel,
+            onAddBookingForDate: _openBookingForDate,
+          ),
+          AddScreen(
             controller: _registryViewModel,
             guestHouseName: widget.guestHouseName,
             guestHouseAddress: widget.guestHouseAddress,
             guestHousePhotoBytes: widget.guestHousePhotoBytes,
           ),
-          ExpensesScreen(controller: _registryViewModel),
           ReportsScreen(controller: _registryViewModel),
         ];
 
         return Scaffold(
           appBar: AppBar(
-            backgroundColor: AppColors.dashboardAccent,
-            foregroundColor: AppColors.dashboardCanvas,
-            toolbarHeight: 86,
+            backgroundColor: Colors.white,
+            foregroundColor: AppColors.textStrong,
+            toolbarHeight: 68,
             titleSpacing: 12,
             title: _GuestHouseHeaderTitle(
               guestHouseName: widget.guestHouseName,
               guestHouseAddress: widget.guestHouseAddress,
               guestHousePhotoBytes: widget.guestHousePhotoBytes,
-              now: _now,
             ),
             titleTextStyle: Theme.of(context).textTheme.titleLarge?.copyWith(
-              color: AppColors.dashboardCanvas,
+              color: AppColors.textStrong,
               fontWeight: FontWeight.w700,
             ),
             centerTitle: false,
             surfaceTintColor: Colors.transparent,
             actions: [
               IconButton(
-              
                 onPressed: _editGuestHouseName,
                 tooltip: 'Edit guest house name',
-                
+
                 icon: const Icon(Icons.edit_outlined, size: 20),
               ),
               StreamBuilder<User?>(
@@ -234,7 +236,7 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
                       : displayName[0].toUpperCase();
 
                   return PopupMenuButton<String>(
-                    color: const Color(0xFF0A1D21),
+                    color: Colors.white,
                     tooltip: 'Account',
                     onSelected: (value) {
                       if (value == 'signin') {
@@ -263,14 +265,10 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
                       padding: const EdgeInsets.symmetric(horizontal: 12),
                       child: CircleAvatar(
                         radius: 16,
-                        backgroundColor: AppColors.dashboardAccent.withValues(
-                          alpha: 0.2,
-                        ),
+                        backgroundColor: AppColors.revenueSoft,
                         child: Text(
                           avatarText,
-                          style: const TextStyle(
-                            color: AppColors.dashboardCanvas,
-                          ),
+                          style: const TextStyle(color: AppColors.revenueDark),
                         ),
                       ),
                     ),
@@ -318,16 +316,17 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
           ),
           bottomNavigationBar: NavigationBarTheme(
             data: NavigationBarThemeData(
-              backgroundColor: AppColors.dashboardAccent,
-              indicatorColor: AppColors.dashboardCard,
+              backgroundColor: Colors.white,
+              indicatorColor: AppColors.revenueSoft,
+              elevation: 8,
               labelTextStyle: WidgetStateProperty.resolveWith<TextStyle?>((
                 states,
               ) {
                 final isSelected = states.contains(WidgetState.selected);
                 return TextStyle(
                   color: isSelected
-                      ? AppColors.dashboardCanvas
-                      : AppColors.dashboardCanvas.withValues(alpha: 0.85),
+                      ? AppColors.brandPrimary
+                      : const Color(0xFF64748B),
                   fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
                 );
               }),
@@ -337,8 +336,8 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
                 final isSelected = states.contains(WidgetState.selected);
                 return IconThemeData(
                   color: isSelected
-                      ? AppColors.dashboardCanvas
-                      : AppColors.dashboardCanvas.withValues(alpha: 0.85),
+                      ? AppColors.brandPrimary
+                      : const Color(0xFF64748B),
                   size: 20,
                 );
               }),
@@ -347,19 +346,14 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
               selectedIndex: _index,
               destinations: const [
                 NavigationDestination(
-                  icon: Icon(Icons.dashboard_outlined),
-                  selectedIcon: Icon(Icons.dashboard),
-                  label: 'Dashboard',
+                  icon: Icon(Icons.home_outlined),
+                  selectedIcon: Icon(Icons.home),
+                  label: 'Home',
                 ),
                 NavigationDestination(
-                  icon: Icon(Icons.bed_outlined),
-                  selectedIcon: Icon(Icons.bed),
-                  label: 'Bookings',
-                ),
-                NavigationDestination(
-                  icon: Icon(Icons.receipt_long_outlined),
-                  selectedIcon: Icon(Icons.receipt_long),
-                  label: 'Expenses',
+                  icon: Icon(Icons.add_circle_outline),
+                  selectedIcon: Icon(Icons.add_circle),
+                  label: 'Add',
                 ),
                 NavigationDestination(
                   icon: Icon(Icons.analytics_outlined),
@@ -385,83 +379,32 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
 // Shared Widgets
 // -------------------------------
 
-class _SectionTitle extends StatelessWidget {
-  const _SectionTitle({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        CircleAvatar(
-          backgroundColor: AppColors.dashboardAccent.withValues(alpha: 0.2),
-          child: Icon(icon, color: AppColors.dashboardAccent),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: AppColors.dashboardText,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              Text(
-                subtitle,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.dashboardText.withValues(alpha: 0.8),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _GuestHouseHeaderTitle extends StatelessWidget {
   const _GuestHouseHeaderTitle({
     required this.guestHouseName,
     required this.guestHouseAddress,
     required this.guestHousePhotoBytes,
-    required this.now,
   });
 
   final String guestHouseName;
   final String guestHouseAddress;
   final Uint8List? guestHousePhotoBytes;
-  final DateTime now;
 
   @override
   Widget build(BuildContext context) {
-    final localizations = MaterialLocalizations.of(context);
-    final date = localizations.formatMediumDate(now);
-    final time = localizations.formatTimeOfDay(
-      TimeOfDay.fromDateTime(now),
-      alwaysUse24HourFormat: MediaQuery.of(context).alwaysUse24HourFormat,
-    );
-
     return Row(
       children: [
         CircleAvatar(
           radius: 24,
-          backgroundColor: AppColors.dashboardCanvas.withValues(alpha: 0.2),
+          backgroundColor: AppColors.revenueSoft,
           backgroundImage: guestHousePhotoBytes != null
               ? MemoryImage(guestHousePhotoBytes!)
               : null,
           child: guestHousePhotoBytes == null
-              ? const Icon(Icons.home_work_outlined, color: AppColors.dashboardCanvas)
+              ? const Icon(
+                  Icons.home_work_outlined,
+                  color: AppColors.brandPrimary,
+                )
               : null,
         ),
         const SizedBox(width: 12),
@@ -475,7 +418,7 @@ class _GuestHouseHeaderTitle extends StatelessWidget {
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
                 style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.dashboardCanvas,
+                  color: AppColors.textStrong,
                   fontWeight: FontWeight.w700,
                 ),
               ),
@@ -484,19 +427,9 @@ class _GuestHouseHeaderTitle extends StatelessWidget {
                 guestHouseAddress,
                 maxLines: 1,
                 overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.dashboardCanvas.withValues(alpha: 0.9),
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                '$date • $time',
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: AppColors.dashboardCanvas.withValues(alpha: 0.82),
-                  fontWeight: FontWeight.w500,
-                ),
+                style: Theme.of(
+                  context,
+                ).textTheme.bodySmall?.copyWith(color: const Color(0xFF475569)),
               ),
             ],
           ),
@@ -567,70 +500,29 @@ class _ReadOnlyAmountCard extends StatelessWidget {
   }
 }
 
-class _BookingMetaRow extends StatelessWidget {
-  const _BookingMetaRow({
-    required this.label,
-    required this.value,
-    required this.labelColor,
-    required this.valueColor,
-  });
-
-  final String label;
-  final String value;
-  final Color labelColor;
-  final Color valueColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Row(
-        children: [
-          SizedBox(
-            width: 120,
-            child: Text(
-              '$label:',
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                color: labelColor,
-              ),
-            ),
-          ),
-          Expanded(
-            child: Text(
-              value,
-              style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                fontWeight: FontWeight.w600,
-                color: valueColor,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
 class _ReceiptRow extends StatelessWidget {
   const _ReceiptRow({
     required this.label,
     required this.value,
     this.emphasize = false,
+    this.valueColor,
   });
 
   final String label;
   final String value;
   final bool emphasize;
+  final Color? valueColor;
 
   @override
   Widget build(BuildContext context) {
     final valueStyle = emphasize
         ? Theme.of(context).textTheme.bodyMedium?.copyWith(
             fontWeight: FontWeight.w700,
-            color: Theme.of(context).colorScheme.primary,
+            color: valueColor ?? Theme.of(context).colorScheme.primary,
           )
         : Theme.of(
             context,
-          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600);
+          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600, color: valueColor);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),
@@ -653,279 +545,35 @@ class _ReceiptRow extends StatelessWidget {
   }
 }
 
-class _EmptyCard extends StatelessWidget {
-  const _EmptyCard({required this.message});
-
-  final String message;
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      color: AppColors.dashboardCard,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Icon(
-              Icons.inbox_outlined,
-              color: AppColors.dashboardText.withValues(alpha: 0.8),
-            ),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                message,
-                style: const TextStyle(color: AppColors.dashboardText),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-ThemeData _nightTabTheme(BuildContext context) {
+ThemeData _lightTabTheme(BuildContext context) {
   final base = Theme.of(context);
 
   return base.copyWith(
     colorScheme: base.colorScheme.copyWith(
-      primary: AppColors.dashboardAccent,
-      secondary: AppColors.dashboardAccent,
-      onPrimary: AppColors.dashboardCanvas,
-      surface: AppColors.dashboardCard,
-      onSurface: AppColors.dashboardText,
+      primary: AppColors.brandPrimary,
+      secondary: AppColors.revenueDark,
+      onPrimary: Colors.white,
+      surface: Colors.white,
+      onSurface: AppColors.textStrong,
+      onSurfaceVariant: const Color(0xFF64748B),
     ),
-    cardTheme: base.cardTheme.copyWith(color: AppColors.dashboardCard),
-    iconTheme: base.iconTheme.copyWith(color: AppColors.dashboardText),
+    scaffoldBackgroundColor: AppColors.appBackground,
+    cardTheme: base.cardTheme.copyWith(color: Colors.white),
+    iconTheme: base.iconTheme.copyWith(color: AppColors.brandPrimary),
     textTheme: base.textTheme.apply(
-      bodyColor: AppColors.dashboardText,
-      displayColor: AppColors.dashboardText,
+      bodyColor: AppColors.textStrong,
+      displayColor: AppColors.textStrong,
     ),
     inputDecorationTheme: base.inputDecorationTheme.copyWith(
-      labelStyle: const TextStyle(color: AppColors.dashboardText),
-      hintStyle: TextStyle(color: AppColors.dashboardText.withValues(alpha: 0.7)),
-      prefixIconColor: AppColors.dashboardText,
-      suffixIconColor: AppColors.dashboardText,
-      enabledBorder: OutlineInputBorder(
-        borderSide: BorderSide(color: AppColors.dashboardAccent.withValues(alpha: 0.35)),
-      ),
-      focusedBorder: const OutlineInputBorder(
-        borderSide: BorderSide(color: AppColors.dashboardAccent),
-      ),
+      labelStyle: const TextStyle(color: Color(0xFF475569)),
+      hintStyle: const TextStyle(color: Color(0xFF94A3B8)),
+      prefixIconColor: const Color(0xFF64748B),
+      suffixIconColor: const Color(0xFF64748B),
     ),
     dropdownMenuTheme: base.dropdownMenuTheme.copyWith(
-      textStyle: const TextStyle(color: AppColors.dashboardText),
+      textStyle: const TextStyle(color: AppColors.textStrong),
     ),
   );
-}
-
-class _FinancialSummaryBar extends StatelessWidget {
-  const _FinancialSummaryBar({
-    required this.label,
-    required this.value,
-    required this.max,
-    required this.color,
-    this.textColor = Colors.black,
-  });
-
-  final String label;
-  final double value;
-  final double max;
-  final Color color;
-  final Color textColor;
-
-  @override
-  Widget build(BuildContext context) {
-    final ratio = (value / max).clamp(0.0, 1.0);
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(label, style: TextStyle(color: textColor)),
-            Text(
-              _currency(value),
-              style: TextStyle(fontWeight: FontWeight.w700, color: textColor),
-            ),
-          ],
-        ),
-        const SizedBox(height: 8),
-        ClipRRect(
-          borderRadius: BorderRadius.circular(999),
-          child: LinearProgressIndicator(
-            minHeight: 12,
-            value: ratio,
-            color: color,
-            backgroundColor: color.withValues(alpha: 0.16),
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _DashboardMetricCard extends StatelessWidget {
-  const _DashboardMetricCard({
-    required this.label,
-    required this.value,
-    required this.icon,
-    required this.color,
-    required this.cardColor,
-    required this.textColor,
-  });
-
-  final String label;
-  final String value;
-  final IconData icon;
-  final Color color;
-  final Color cardColor;
-  final Color textColor;
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(14),
-        color: cardColor,
-        border: Border.all(color: color.withValues(alpha: 0.3)),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Icon(icon, size: 18, color: color),
-              const SizedBox(width: 6),
-              Text(
-                label,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: textColor,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w800,
-              color: textColor,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _DashboardSectionTitle extends StatelessWidget {
-  const _DashboardSectionTitle({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        CircleAvatar(
-          backgroundColor: AppColors.dashboardAccent.withValues(alpha: 0.2),
-          child: Icon(icon, color: const Color.fromARGB(149, 242, 241, 237)),
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                title,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                  color: AppColors.dashboardText,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              Text(
-                subtitle,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: AppColors.dashboardText.withValues(alpha: 0.8),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _ReportCard extends StatelessWidget {
-  const _ReportCard({
-    required this.title,
-    required this.value,
-    required this.color,
-    required this.icon,   
-    required this.titleFontSize,
-    required this.valueFontSize,
-  });
-
-  final String title;
-  final String value;
-  final Color color;
-  final IconData icon;
-  final double titleFontSize;
-  final double valueFontSize;
-  
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                CircleAvatar(
-                  backgroundColor: color.withValues(alpha: 0.16),
-                  child: Icon(icon, color: color),
-                ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                      fontSize: titleFontSize, // 5. Assign variable here
-                      color: AppColors.dashboardText,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Text(
-              value,
-              style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontSize: valueFontSize,
-                fontWeight: FontWeight.w700,
-                color: color,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 // -------------------------------

@@ -16,6 +16,41 @@ For help getting started with Flutter development, view the
 [online documentation](https://docs.flutter.dev/), which offers tutorials,
 samples, guidance on mobile development, and a full API reference.
 
+## Booking balance payments
+
+Tap an empty date on the Home calendar to open a new booking with that date
+selected as check-in. Check-out defaults to the next day and can be changed.
+The same default applies when choosing check-in from the Add screen. Tapping
+an occupied date continues to show its stays on Home.
+Bookings support between 1 and 99 guests.
+
+From Home, open a booking and choose **Record payment** to record a full or
+partial payment. The original advance and subsequent balance payments are
+shown separately. Payments can be recorded before or after the check-in date;
+the balance is due on that date. Monthly P&L attributes collected payments to
+the booking's check-in month, not the month in which a payment was recorded.
+From the check-in date onward, bookings with an unpaid balance are highlighted
+in red on Home and listed under **Payments due**, including past stays. Partial
+payments remain due until the full balance is recorded; cancelled bookings are
+excluded.
+
+Deploy the updated `firestore.rules` before releasing this app version so
+Firestore accepts the new payment, cancellation, and refund fields.
+
+## Booking changes and cancellations
+
+Open a booking on Home to modify or cancel it. Cancelled bookings remain
+available under **Cancelled bookings** in their check-in month and no longer
+occupy the calendar. Payments remain recorded when cancelling. After returning
+the money to the guest, use **Record full refund** to record the full amount;
+the app does not transfer money. Monthly P&L keeps unrefunded payments as
+revenue and subtracts a recorded refund in the booking's check-in month.
+
+The monthly P&L PDF includes separate lists of active and cancelled bookings,
+their payments and refunds, and all expenses dated in the selected month.
+Bookings are listed by check-in month, including when a cancellation or refund
+was recorded in a different month.
+
 ## Android Google Sign-In setup
 
 Android requires native OAuth configuration in addition to Firebase web auth.

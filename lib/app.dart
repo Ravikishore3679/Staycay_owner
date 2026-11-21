@@ -117,6 +117,10 @@ class _GuestHouseRegistryAppState extends State<GuestHouseRegistryApp> {
     return MaterialApp(
       title: _guestHouseName,
       debugShowCheckedModeBanner: false,
+      locale: const Locale('en', 'US'),
+      supportedLocales: const [
+        Locale('en', 'US'),
+      ],
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
@@ -124,19 +128,57 @@ class _GuestHouseRegistryAppState extends State<GuestHouseRegistryApp> {
           brightness: Brightness.light,
         ).copyWith(
           primary: AppColors.brandPrimary,
-          surface: AppColors.dashboardCard,
-          onSurface: AppColors.dashboardText,
+          onPrimary: Colors.white,
+          secondary: AppColors.revenueDark,
+          surface: Colors.white,
+          onSurface: AppColors.textStrong,
+          onSurfaceVariant: const Color(0xFF64748B),
         ),
         scaffoldBackgroundColor: AppColors.appBackground,
+        appBarTheme: const AppBarTheme(
+          backgroundColor: Colors.white,
+          foregroundColor: AppColors.textStrong,
+          surfaceTintColor: Colors.transparent,
+          elevation: 0,
+        ),
         inputDecorationTheme: const InputDecorationTheme(
-          border: OutlineInputBorder(),
+          filled: true,
+          fillColor: Color(0xFFF8FAFC),
           isDense: true,
+          contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 15),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+            borderSide: BorderSide(color: Color(0xFFE2E8F0)),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.all(Radius.circular(12)),
+            borderSide: BorderSide(color: AppColors.brandPrimary, width: 1.5),
+          ),
         ),
         cardTheme: CardThemeData(
           elevation: 0,
-          color: AppColors.dashboardCard,
+          color: Colors.white,
+          margin: const EdgeInsets.only(bottom: 10),
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(16),
+            borderRadius: BorderRadius.circular(18),
+            side: const BorderSide(color: Color(0xFFE2E8F0)),
+          ),
+        ),
+        filledButtonTheme: FilledButtonThemeData(
+          style: FilledButton.styleFrom(
+            minimumSize: const Size(48, 48),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+        ),
+        snackBarTheme: SnackBarThemeData(
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
           ),
         ),
       ),

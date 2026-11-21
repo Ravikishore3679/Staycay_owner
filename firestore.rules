@@ -14,19 +14,47 @@ service cloud.firestore {
                'checkOut',
                'guests',
                'totalAmount',
-               'advancePaid'
+               'advancePaid',
+               'balancePaid',
+               'isCancelled',
+               'refundedAmount'
              ]) &&
           data.name is string && data.name.size() >= 3 && data.name.size() <= 80 &&
           data.phone is string && data.phone.matches('^[0-9]{10}$') &&
-          data.aadhaar is string && data.aadhaar.matches('^[0-9]{12}$') &&
+          data.aadhaar is string &&
+          (data.aadhaar.size() == 0 || data.aadhaar.matches('^[0-9]{12}$')) &&
           data.checkIn is timestamp &&
           data.checkOut is timestamp &&
           data.checkOut > data.checkIn &&
-          data.guests is int && data.guests >= 1 && data.guests <= 50 &&
+          data.guests is int && data.guests >= 1 && data.guests <= 99 &&
           data.totalAmount is number && data.totalAmount > 0 &&
           data.advancePaid is number &&
           data.advancePaid >= 0 &&
-          data.advancePaid <= data.totalAmount;
+          data.advancePaid <= data.totalAmount &&
+          (!('balancePaid' in data) ||
+            (data.balancePaid is number && data.balancePaid >= 0 &&
+             data.advancePaid + data.balancePaid <= data.totalAmount + 0.000001)) &&
+          (!('isCancelled' in data) || data.isCancelled is bool) &&
+          (!('refundedAmount' in data) ||
+            (data.refundedAmount is number && data.refundedAmount >= 0 &&
+             (data.refundedAmount == 0 ||
+               (data.get('isCancelled', false) == true &&
+                data.refundedAmount == data.advancePaid +
+                  ('balancePaid' in data ? data.balancePaid : 0)))));
+    }
+
+    function validBookingTransition(before, after) {
+      let wasCancelled = before.get('isCancelled', false);
+      let isCancelled = after.get('isCancelled', false);
+      return wasCancelled
+          ? isCancelled &&
+            after.diff(before).affectedKeys().hasOnly(['refundedAmount']) &&
+            (before.get('refundedAmount', 0) == 0 ||
+             after.get('refundedAmount', 0) == before.get('refundedAmount', 0))
+          : isCancelled
+            ? after.diff(before).affectedKeys().hasOnly(['isCancelled']) &&
+              after.get('refundedAmount', 0) == 0
+            : after.get('refundedAmount', 0) == 0;
     }
 
     function isValidExpense(data) {
@@ -38,7 +66,7 @@ service cloud.firestore {
              ]) &&
           data.title is string && data.title.size() >= 3 && data.title.size() <= 80 &&
           data.amount is number && data.amount > 0 &&
-          data.description is string && data.description.size() >= 5 && data.description.size() <= 500 &&
+          data.description is string && data.description.size() <= 500 &&
           data.date is timestamp;
     }
 
@@ -60,7 +88,13 @@ service cloud.firestore {
     // User bookings
     match /users/{userId}/bookings/{bookingId} {
       allow read: if isSignedIn() && request.auth.uid == userId;
-      allow create, update: if isSignedIn() && request.auth.uid == userId && isValidBooking(request.resource.data);
+      allow create: if isSignedIn() && request.auth.uid == userId &&
+          isValidBooking(request.resource.data) &&
+          request.resource.data.get('isCancelled', false) == false &&
+          request.resource.data.get('refundedAmount', 0) == 0;
+      allow update: if isSignedIn() && request.auth.uid == userId &&
+          isValidBooking(request.resource.data) &&
+          validBookingTransition(resource.data, request.resource.data);
       allow delete: if isSignedIn() && request.auth.uid == userId;
     }
 

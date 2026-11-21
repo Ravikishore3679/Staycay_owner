@@ -16,11 +16,13 @@ void main() {
     setupFirebaseCoreMocks();
   });
 
-  testWidgets('Guest House Registry loads dashboard',
+  testWidgets('Guest House Registry shows the home overview',
       (WidgetTester tester) async {
     await tester.pumpWidget(const GuestHouseRegistryApp());
 
     expect(find.text('Guest House Registry'), findsOneWidget);
-    expect(find.text('Revenue vs Expenditure'), findsOneWidget);
+    expect(find.text('Stay calendar'), findsOneWidget);
+    expect(find.text('Upcoming bookings'), findsOneWidget);
+    expect(find.text('Recent expenses'), findsOneWidget);
   });
 }

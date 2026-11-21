@@ -7,7 +7,7 @@ import 'registry_repository.dart';
 
 class FirestoreRegistryRepository implements RegistryRepository {
   FirestoreRegistryRepository({FirebaseFirestore? firestore})
-      : _firestore = firestore ?? FirebaseFirestore.instance;
+    : _firestore = firestore ?? FirebaseFirestore.instance;
 
   final FirebaseFirestore _firestore;
 
@@ -28,30 +28,26 @@ class FirestoreRegistryRepository implements RegistryRepository {
   @override
   Stream<List<Booking>> watchBookings() {
     final uid = _currentUid();
-    // Optimize: Order by checkIn descending and limit to 500 documents
-    // This reduces initial load time and network bandwidth
     return _bookingsCollection(uid)
         .orderBy('checkIn', descending: true)
-        .limit(500)
         .snapshots()
         .map(
-          (snapshot) =>
-              snapshot.docs.map((doc) => Booking.fromMap(doc.id, doc.data())).toList(),
+          (snapshot) => snapshot.docs
+              .map((doc) => Booking.fromMap(doc.id, doc.data()))
+              .toList(),
         );
   }
 
   @override
   Stream<List<Expense>> watchExpenses() {
     final uid = _currentUid();
-    // Optimize: Order by date descending and limit to 500 documents
-    // This reduces initial load time and network bandwidth
     return _expensesCollection(uid)
         .orderBy('date', descending: true)
-        .limit(500)
         .snapshots()
         .map(
-          (snapshot) =>
-              snapshot.docs.map((doc) => Expense.fromMap(doc.id, doc.data())).toList(),
+          (snapshot) => snapshot.docs
+              .map((doc) => Expense.fromMap(doc.id, doc.data()))
+              .toList(),
         );
   }
 
@@ -63,14 +59,94 @@ class FirestoreRegistryRepository implements RegistryRepository {
 
   @override
   Future<void> updateBooking(Booking booking) async {
-    final uid = _currentUid();
-    await _bookingsCollection(uid).doc(booking.id).set(booking.toMap());
+    final ref = _bookingsCollection(_currentUid()).doc(booking.id);
+    await _firestore.runTransaction((transaction) async {
+      final snapshot = await transaction.get(ref);
+      final data = snapshot.data();
+      if (data == null) {
+        throw StateError('This booking no longer exists.');
+      }
+      final current = Booking.fromMap(snapshot.id, data);
+      if (current.isCancelled) {
+        throw StateError('Cancelled bookings cannot be modified.');
+      }
+      if (booking.advancePaid + current.balancePaid - booking.totalAmount >
+          0.000001) {
+        throw StateError('Payments exceed the updated booking total.');
+      }
+      final updates = booking.toMap()
+        ..remove('balancePaid')
+        ..remove('isCancelled')
+        ..remove('refundedAmount');
+      transaction.update(ref, updates);
+    });
   }
 
   @override
-  Future<void> deleteBooking(String bookingId) async {
-    final uid = _currentUid();
-    await _bookingsCollection(uid).doc(bookingId).delete();
+  Future<Booking> recordBookingPayment(String bookingId, double amount) async {
+    if (!amount.isFinite || amount <= 0) {
+      throw ArgumentError('Payment must be greater than zero.');
+    }
+
+    final ref = _bookingsCollection(_currentUid()).doc(bookingId);
+    return _firestore.runTransaction((transaction) async {
+      final snapshot = await transaction.get(ref);
+      final data = snapshot.data();
+      if (data == null) {
+        throw StateError('This booking no longer exists.');
+      }
+      final booking = Booking.fromMap(snapshot.id, data);
+      if (booking.isCancelled) {
+        throw StateError('Cannot record a payment for a cancelled booking.');
+      }
+      if (amount - booking.remainingAmount > 0.000001) {
+        throw StateError('Payment exceeds the current remaining balance.');
+      }
+      final updatedBalancePaid = booking.balancePaid + amount;
+      transaction.update(ref, {'balancePaid': updatedBalancePaid});
+      return Booking.fromMap(snapshot.id, {
+        ...data,
+        'balancePaid': updatedBalancePaid,
+      });
+    });
+  }
+
+  @override
+  Future<Booking> cancelBooking(String bookingId) async {
+    final ref = _bookingsCollection(_currentUid()).doc(bookingId);
+    return _firestore.runTransaction((transaction) async {
+      final snapshot = await transaction.get(ref);
+      final data = snapshot.data();
+      if (data == null) throw StateError('This booking no longer exists.');
+      final booking = Booking.fromMap(snapshot.id, data);
+      if (booking.isCancelled) {
+        throw StateError('Booking is already cancelled.');
+      }
+      transaction.update(ref, {'isCancelled': true});
+      return Booking.fromMap(snapshot.id, {...data, 'isCancelled': true});
+    });
+  }
+
+  @override
+  Future<Booking> refundBooking(String bookingId) async {
+    final ref = _bookingsCollection(_currentUid()).doc(bookingId);
+    return _firestore.runTransaction((transaction) async {
+      final snapshot = await transaction.get(ref);
+      final data = snapshot.data();
+      if (data == null) throw StateError('This booking no longer exists.');
+      final booking = Booking.fromMap(snapshot.id, data);
+      if (!booking.isCancelled) {
+        throw StateError('Cancel the booking before recording a refund.');
+      }
+      if (booking.refundedAmount > 0 || booking.grossPaid <= 0) {
+        throw StateError('There is no payment available to refund.');
+      }
+      transaction.update(ref, {'refundedAmount': booking.grossPaid});
+      return Booking.fromMap(snapshot.id, {
+        ...data,
+        'refundedAmount': booking.grossPaid,
+      });
+    });
   }
 
   @override
@@ -79,15 +155,4 @@ class FirestoreRegistryRepository implements RegistryRepository {
     await _expensesCollection(uid).doc(expense.id).set(expense.toMap());
   }
 
-  @override
-  Future<void> updateExpense(Expense expense) async {
-    final uid = _currentUid();
-    await _expensesCollection(uid).doc(expense.id).set(expense.toMap());
-  }
-
-  @override
-  Future<void> deleteExpense(String expenseId) async {
-    final uid = _currentUid();
-    await _expensesCollection(uid).doc(expenseId).delete();
-  }
 }

@@ -6,8 +6,8 @@ abstract class RegistryRepository {
   Stream<List<Expense>> watchExpenses();
   Future<void> addBooking(Booking booking);
   Future<void> updateBooking(Booking booking);
-  Future<void> deleteBooking(String bookingId);
+  Future<Booking> recordBookingPayment(String bookingId, double amount);
+  Future<Booking> cancelBooking(String bookingId);
+  Future<Booking> refundBooking(String bookingId);
   Future<void> addExpense(Expense expense);
-  Future<void> updateExpense(Expense expense);
-  Future<void> deleteExpense(String expenseId);
 }
