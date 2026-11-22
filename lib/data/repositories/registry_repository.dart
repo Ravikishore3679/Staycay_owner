@@ -10,4 +10,5 @@ abstract class RegistryRepository {
   Future<Booking> cancelBooking(String bookingId);
   Future<Booking> refundBooking(String bookingId);
   Future<void> addExpense(Expense expense);
+  Future<void> deleteExpense(String expenseId);
 }

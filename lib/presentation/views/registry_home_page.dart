@@ -20,7 +20,7 @@ part 'Dashboard_screen.dart';
 part 'Bookings_screen.dart';
 part 'expenses_screen.dart';
 part 'reports_screen.dart';
-part 'add_screen.dart';
+part 'manage_screen.dart';
 
 // -----------------------------
 // Presentation Layer
@@ -51,6 +51,7 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
   late final RegistryViewModel _registryViewModel;
   late final AuthViewModel _authViewModel;
   int _index = 0;
+  int _manageVisit = 0;
   Future<void> _signInWithGoogle() async {
     try {
       await _authViewModel.signInWithGoogle();
@@ -106,7 +107,8 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
             guestHouseAddress: widget.guestHouseAddress,
             guestHousePhotoBytes: widget.guestHousePhotoBytes,
           ),
-          AddScreen(
+          ManageScreen(
+            key: ValueKey('manage-$_manageVisit'),
             controller: _registryViewModel,
             guestHouseName: widget.guestHouseName,
             guestHouseAddress: widget.guestHouseAddress,
@@ -242,7 +244,7 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
                 NavigationDestination(
                   icon: Icon(Icons.add_circle_outline),
                   selectedIcon: Icon(Icons.add_circle),
-                  label: 'Add',
+                  label: 'Manage',
                 ),
                 NavigationDestination(
                   icon: Icon(Icons.analytics_outlined),
@@ -252,6 +254,7 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
               ],
               onDestinationSelected: (newIndex) {
                 setState(() {
+                  if (newIndex == 1) _manageVisit++;
                   _index = newIndex;
                 });
               },

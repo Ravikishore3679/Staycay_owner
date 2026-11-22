@@ -674,7 +674,8 @@ class _BookingsScreenState extends State<BookingsScreen> {
                 icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
                 label: const Text('Download PDF'),
               ),
-              TextButton(
+              FilledButton(
+                autofocus: true,
                 onPressed: () => Navigator.of(dialogContext).pop(),
                 child: const Text('Close'),
               ),

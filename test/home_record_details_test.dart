@@ -195,6 +195,8 @@ void main() {
     expect(find.text('Expenses'), findsNothing);
     expect(find.text('Selected month'), findsNothing);
     expect(find.text('Stay calendar'), findsOneWidget);
+    expect(find.text('Cancelled bookings'), findsNothing);
+    expect(find.text('Recent expenses'), findsNothing);
   });
 
   testWidgets('calendar and upcoming bookings open full booking details', (
@@ -265,36 +267,6 @@ void main() {
     );
   });
 
-  testWidgets('recent expenses open their full details', (tester) async {
-    await pumpHome(tester);
-
-    final expenseTile = find.widgetWithText(ListTile, 'Cleaning');
-    await tester.scrollUntilVisible(
-      expenseTile,
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.ensureVisible(expenseTile);
-    await tester.pumpAndSettle();
-    await tester.tap(expenseTile);
-    await tester.pumpAndSettle();
-
-    final dialog = find.byType(AlertDialog);
-    expect(find.text('Expense details'), findsOneWidget);
-    expect(
-      find.descendant(of: dialog, matching: find.text('Cleaning')),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(of: dialog, matching: find.text('Rs 500.00')),
-      findsOneWidget,
-    );
-    expect(
-      find.descendant(of: dialog, matching: find.text('Supplies for rooms')),
-      findsOneWidget,
-    );
-  });
-
   testWidgets('reprint uses current payments and cancelled refund details', (
     tester,
   ) async {
@@ -316,7 +288,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(bookingTile);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Record payment'));
+    await tester.tap(find.byTooltip('Record payment'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField), '500');
     await tester.tap(find.text('Save payment'));
@@ -333,11 +305,11 @@ void main() {
     expect(content, contains('Rs 1500.00'));
     expect(content, contains('Active'));
 
-    await tester.tap(find.text('Cancel booking'));
+    await tester.tap(find.byTooltip('Cancel booking'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Confirm cancellation'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Record full refund'));
+    await tester.tap(find.byTooltip('Record full refund'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Confirm refund'));
     await tester.pumpAndSettle();
@@ -451,14 +423,14 @@ void main() {
     expect(find.text('Guest & stay'), findsOneWidget);
     expect(find.text('Active'), findsOneWidget);
     expect(find.text('Payment summary'), findsOneWidget);
-    expect(find.text('Record payment'), findsOneWidget);
+    expect(find.byTooltip('Record payment'), findsOneWidget);
     expect(find.byTooltip('Reprint receipt'), findsOneWidget);
     expect(
       tester.getTopLeft(find.byTooltip('Reprint receipt')).dx,
-      greaterThan(tester.getTopLeft(find.text('Record payment')).dx),
+      greaterThan(tester.getTopLeft(find.byTooltip('Record payment')).dx),
     );
-    expect(find.text('Modify'), findsOneWidget);
-    expect(find.text('Cancel booking'), findsOneWidget);
+    expect(find.byTooltip('Modify'), findsOneWidget);
+    expect(find.byTooltip('Cancel booking'), findsOneWidget);
     expect(find.text('Close'), findsOneWidget);
     expect(tester.takeException(), isNull);
 
@@ -466,7 +438,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Advance paid:'), findsOneWidget);
     expect(find.text('Remaining:'), findsOneWidget);
-    await tester.tap(find.text('Record payment'));
+    await tester.tap(find.byTooltip('Record payment'));
     await tester.pumpAndSettle();
     expect(find.text('Save payment'), findsOneWidget);
     await tester.tap(find.text('Cancel'));
@@ -495,7 +467,7 @@ void main() {
       await tester.tap(bookingTile);
       await tester.pumpAndSettle();
 
-      await tester.tap(find.text('Record payment'));
+      await tester.tap(find.byTooltip('Record payment'));
       await tester.pumpAndSettle();
       await tester.enterText(find.byType(TextFormField), '500');
       await tester.tap(find.text('Save payment'));
@@ -518,7 +490,7 @@ void main() {
       );
       expect(find.text('Balance paid:'), findsOneWidget);
 
-      await tester.tap(find.text('Record payment'));
+      await tester.tap(find.byTooltip('Record payment'));
       await tester.pumpAndSettle();
       expect(find.text('1500.00'), findsOneWidget);
       await tester.tap(find.text('Save payment'));
@@ -526,7 +498,7 @@ void main() {
       expect(controller.booking.balancePaid, 2000);
       expect(controller.booking.remainingAmount, 0);
       expect(find.text('Paid in full'), findsOneWidget);
-      expect(find.text('Record payment'), findsNothing);
+      expect(find.byTooltip('Record payment'), findsOneWidget);
     },
   );
 
@@ -547,7 +519,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(bookingTile);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Record payment'));
+    await tester.tap(find.byTooltip('Record payment'));
     await tester.pumpAndSettle();
 
     for (final amount in ['', '0', '-1', '2000.01', '1.234', 'NaN']) {
@@ -652,7 +624,7 @@ void main() {
       AppColors.expenseDark,
     );
     expect(find.textContaining('Payment due on'), findsOneWidget);
-    await tester.tap(find.text('Record payment'));
+    await tester.tap(find.byTooltip('Record payment'));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextFormField), '500');
     await tester.tap(find.text('Save payment'));
@@ -666,7 +638,7 @@ void main() {
           ?.color,
       AppColors.expenseDark,
     );
-    await tester.tap(find.text('Record payment'));
+    await tester.tap(find.byTooltip('Record payment'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Save payment'));
     await tester.pumpAndSettle();
@@ -739,7 +711,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(bookingTile);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Modify'));
+    await tester.tap(find.byTooltip('Modify'));
     await tester.pumpAndSettle();
     await tester.enterText(
       find.widgetWithText(TextFormField, 'Name'),
@@ -772,7 +744,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(bookingTile);
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Cancel booking'));
+    await tester.tap(find.byTooltip('Cancel booking'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Confirm cancellation'));
     await tester.pumpAndSettle();
@@ -788,24 +760,10 @@ void main() {
       1500,
     );
     expect(find.text('Cancelled booking'), findsOneWidget);
-    expect(find.text('Record payment'), findsNothing);
-    expect(find.text('Modify'), findsNothing);
-    await tester.tap(find.text('Close'));
-    await tester.pumpAndSettle();
-    expect(find.text('No guest stays on this date.'), findsOneWidget);
-    expect(find.byIcon(Icons.event_available_outlined), findsNothing);
+    expect(find.byTooltip('Record payment'), findsOneWidget);
+    expect(find.byTooltip('Modify'), findsOneWidget);
 
-    final cancelled = find.byIcon(Icons.event_busy_outlined);
-    await tester.scrollUntilVisible(
-      cancelled,
-      200,
-      scrollable: find.byType(Scrollable).first,
-    );
-    await tester.ensureVisible(cancelled);
-    await tester.pumpAndSettle();
-    await tester.tap(cancelled);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Record full refund'));
+    await tester.tap(find.byTooltip('Record full refund'));
     await tester.pumpAndSettle();
     expect(find.textContaining('does not transfer money'), findsOneWidget);
     await tester.tap(find.text('Confirm refund'));
@@ -818,7 +776,11 @@ void main() {
           .revenue,
       0,
     );
-    expect(find.text('Record full refund'), findsNothing);
+    expect(find.byTooltip('Record full refund'), findsOneWidget);
+    await tester.tap(find.text('Close'));
+    await tester.pumpAndSettle();
+    expect(find.text('No guest stays on this date.'), findsOneWidget);
+    expect(find.byIcon(Icons.event_available_outlined), findsNothing);
   });
 
   testWidgets('shows errors when cancellation or refund cannot be saved', (
@@ -839,19 +801,19 @@ void main() {
     await tester.tap(bookingTile);
     await tester.pumpAndSettle();
     controller.failCancellation = true;
-    await tester.tap(find.text('Cancel booking'));
+    await tester.tap(find.byTooltip('Cancel booking'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Confirm cancellation'));
     await tester.pumpAndSettle();
     expect(find.textContaining('Unable to cancel booking'), findsOneWidget);
     expect(controller.booking.isCancelled, false);
     controller.failCancellation = false;
-    await tester.tap(find.text('Cancel booking'));
+    await tester.tap(find.byTooltip('Cancel booking'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Confirm cancellation'));
     await tester.pumpAndSettle();
     controller.failRefund = true;
-    await tester.tap(find.text('Record full refund'));
+    await tester.tap(find.byTooltip('Record full refund'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Confirm refund'));
     await tester.pumpAndSettle();

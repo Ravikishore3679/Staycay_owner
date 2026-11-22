@@ -155,4 +155,9 @@ class FirestoreRegistryRepository implements RegistryRepository {
     await _expensesCollection(uid).doc(expense.id).set(expense.toMap());
   }
 
+  @override
+  Future<void> deleteExpense(String expenseId) async {
+    final uid = _currentUid();
+    await _expensesCollection(uid).doc(expenseId).delete();
+  }
 }

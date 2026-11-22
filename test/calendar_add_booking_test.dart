@@ -26,7 +26,10 @@ class _Repository implements RegistryRepository {
 
 class _AccountRepository implements AccountProfileRepository {
   @override
-  Future<void> createProfileIfAbsent(String uid, AccountProfile profile) async {}
+  Future<void> createProfileIfAbsent(
+    String uid,
+    AccountProfile profile,
+  ) async {}
   @override
   Stream<AccountProfile?> watchProfile(String uid) => Stream.value(null);
 
@@ -250,7 +253,7 @@ void main() {
     tester,
   ) async {
     await pumpRegistry(tester);
-    await tester.tap(find.text('Add').last);
+    await tester.tap(find.text('Manage').last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Add booking'));
     await tester.pumpAndSettle();
@@ -293,42 +296,44 @@ void main() {
     await tapDate(tester, DateTime(target.year, target.month, 10));
     await tester.pageBack();
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Add').last);
+    await tester.tap(find.text('Manage').last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Add booking'));
     await tester.pumpAndSettle();
     expect(find.text('Select date'), findsNWidgets(2));
   });
 
-  testWidgets('calendar shortcut preserves an unfinished Add tab booking', (
-    tester,
-  ) async {
-    await pumpRegistry(tester);
-    await tester.tap(find.text('Add').last);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Add booking'));
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      find.widgetWithText(TextFormField, 'Name'),
-      'Existing draft',
-    );
-    await tester.tap(find.text('Home').last);
-    await tester.pumpAndSettle();
-    await tapDate(tester, DateTime(target.year, target.month, 10));
-    expect(find.text('Existing draft'), findsNothing);
-    await tester.pageBack();
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Add').last);
-    await tester.pumpAndSettle();
-    expect(find.text('Existing draft'), findsOneWidget);
-    expect(find.text('Select date'), findsNWidgets(2));
-  });
+  testWidgets(
+    'calendar shortcut does not preserve an unfinished Manage tab booking',
+    (tester) async {
+      await pumpRegistry(tester);
+      await tester.tap(find.text('Manage').last);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Add booking'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextFormField, 'Name'),
+        'Existing draft',
+      );
+      await tester.tap(find.text('Home').last);
+      await tester.pumpAndSettle();
+      await tapDate(tester, DateTime(target.year, target.month, 10));
+      expect(find.text('Existing draft'), findsNothing);
+      await tester.pageBack();
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Manage').last);
+      await tester.pumpAndSettle();
+      expect(find.text('Manage records'), findsOneWidget);
+      expect(find.text('Existing draft'), findsNothing);
+      expect(find.text('Select date'), findsNothing);
+    },
+  );
 
   testWidgets('Add expense form saves a new expense without listing records', (
     tester,
   ) async {
     await pumpRegistry(tester);
-    await tester.tap(find.text('Add').last);
+    await tester.tap(find.text('Manage').last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Add expense'));
     await tester.pumpAndSettle();
@@ -375,6 +380,34 @@ void main() {
       isEmpty,
     );
     expect(find.widgetWithText(ListTile, 'Cleaning supplies'), findsNothing);
+  });
+
+  testWidgets('Manage always opens the manage records page', (tester) async {
+    await pumpRegistry(tester);
+    await tester.tap(find.text('Manage').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add expense'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Home').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Manage').last);
+    await tester.pumpAndSettle();
+
+    expect(find.text('Manage records'), findsOneWidget);
+    expect(find.text('Add booking'), findsOneWidget);
+    expect(find.text('Add expense'), findsOneWidget);
+    expect(find.text('Show expenses'), findsOneWidget);
+  });
+
+  testWidgets('Manage screen shows current month expenses', (tester) async {
+    await pumpRegistry(tester);
+    await tester.tap(find.text('Manage').last);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Show expenses'));
+    await tester.pumpAndSettle();
+    expect(find.text('Expenses this month'), findsOneWidget);
+    expect(find.text('No expenses this month.'), findsOneWidget);
   });
 
   testWidgets(

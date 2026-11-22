@@ -50,11 +50,7 @@ class _ManageScreenState extends State<ManageScreen> {
             title: 'Add expense',
             onBack: () => setState(() => _selectedForm = null),
           ),
-          Expanded(
-            child: ExpensesScreen(
-              controller: widget.controller,
-            ),
-          ),
+          Expanded(child: ExpensesScreen(controller: widget.controller)),
         ],
       );
     }
@@ -172,7 +168,63 @@ class _MonthExpensesList extends StatelessWidget {
                             ? _formatDate(expense.date)
                             : '${_formatDate(expense.date)} · ${expense.description}',
                       ),
-                      trailing: Text(_currency(expense.amount)),
+                      trailing: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            _currency(expense.amount),
+                            style: const TextStyle(fontWeight: FontWeight.w700),
+                          ),
+                          IconButton(
+                            tooltip: 'Delete expense',
+                            icon: const Icon(
+                              Icons.delete_outline,
+                              color: AppColors.expenseDark,
+                            ),
+                            onPressed: () async {
+                              final confirmed = await showDialog<bool>(
+                                context: context,
+                                builder: (dialogContext) => AlertDialog(
+                                  title: const Text('Delete expense?'),
+                                  content: Text(
+                                    'Delete "${expense.title}" (${_currency(expense.amount)})? This cannot be undone.',
+                                  ),
+                                  actions: [
+                                    TextButton(
+                                      onPressed: () => Navigator.of(
+                                        dialogContext,
+                                      ).pop(false),
+                                      child: const Text('Keep expense'),
+                                    ),
+                                    FilledButton(
+                                      autofocus: true,
+                                      style: FilledButton.styleFrom(
+                                        backgroundColor: AppColors.expenseDark,
+                                      ),
+                                      onPressed: () =>
+                                          Navigator.of(dialogContext).pop(true),
+                                      child: const Text('Delete'),
+                                    ),
+                                  ],
+                                ),
+                              );
+                              if (confirmed != true) return;
+                              try {
+                                await controller.deleteExpense(expense.id);
+                              } catch (e) {
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      'Failed to delete expense: $e',
+                                    ),
+                                  ),
+                                );
+                              }
+                            },
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),

@@ -145,7 +145,8 @@ class RegistryViewModel extends ChangeNotifier {
     final upcoming =
         _bookings
             .where(
-              (b) => !b.isCancelled &&
+              (b) =>
+                  !b.isCancelled &&
                   (DateUtils.dateOnly(b.checkIn).isAfter(today) ||
                       DateUtils.isSameDay(b.checkIn, today)),
             )
@@ -273,6 +274,17 @@ class RegistryViewModel extends ChangeNotifier {
       _errorMessage = null;
     } catch (e) {
       _errorMessage = _formatError(e, prefix: 'Failed to add expense');
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  Future<void> deleteExpense(String expenseId) async {
+    try {
+      await repository.deleteExpense(expenseId);
+      _errorMessage = null;
+    } catch (e) {
+      _errorMessage = _formatError(e, prefix: 'Failed to delete expense');
       notifyListeners();
       rethrow;
     }

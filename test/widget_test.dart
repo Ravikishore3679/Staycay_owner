@@ -23,6 +23,6 @@ void main() {
     expect(find.text('Guest House Registry'), findsOneWidget);
     expect(find.text('Stay calendar'), findsOneWidget);
     expect(find.text('Upcoming bookings'), findsOneWidget);
-    expect(find.text('Recent expenses'), findsOneWidget);
+    expect(find.text('Recent expenses'), findsNothing);
   });
 }

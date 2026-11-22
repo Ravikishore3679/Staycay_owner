@@ -252,7 +252,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Renamed House'), findsOneWidget);
     expect(find.text('45 New Road'), findsOneWidget);
-    await tester.tap(find.text('Add').last);
+    await tester.tap(find.text('Manage').last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Add booking'));
     await tester.pumpAndSettle();
