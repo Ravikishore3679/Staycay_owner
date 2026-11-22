@@ -7,12 +7,14 @@ import 'package:pdf/pdf.dart';
 import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
+import '../../data/repositories/account_profile_repository.dart';
 import '../../domain/models/booking.dart';
 import '../../domain/models/expense.dart';
 import '../../domain/models/monthly_report.dart';
 import '../theme/app_colors.dart';
 import '../viewmodels/auth_view_model.dart';
 import '../viewmodels/registry_view_model.dart';
+import 'account_profile_screen.dart';
 
 part 'Dashboard_screen.dart';
 part 'Bookings_screen.dart';
@@ -29,17 +31,17 @@ class RegistryHomePage extends StatefulWidget {
     required this.guestHouseName,
     required this.guestHouseAddress,
     required this.guestHousePhotoBytes,
-    required this.onGuestHouseNameChanged,
     required this.registryViewModel,
     required this.authViewModel,
+    required this.accountProfileRepository,
   });
 
   final String guestHouseName;
   final String guestHouseAddress;
   final Uint8List? guestHousePhotoBytes;
-  final Future<void> Function(String value) onGuestHouseNameChanged;
   final RegistryViewModel registryViewModel;
   final AuthViewModel authViewModel;
+  final AccountProfileRepository accountProfileRepository;
 
   @override
   State<RegistryHomePage> createState() => _RegistryHomePageState();
@@ -49,72 +51,6 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
   late final RegistryViewModel _registryViewModel;
   late final AuthViewModel _authViewModel;
   int _index = 0;
-  Future<void> _editGuestHouseName() async {
-    final controller = TextEditingController(text: widget.guestHouseName);
-
-    final newName = await showDialog<String>(
-      context: context,
-      builder: (dialogContext) {
-        final formKey = GlobalKey<FormState>();
-
-        return AlertDialog(
-          title: const Text('Edit Guest House Name'),
-          content: Form(
-            key: formKey,
-            child: TextFormField(
-              controller: controller,
-              autofocus: true,
-              textCapitalization: TextCapitalization.words,
-              style: const TextStyle(color: Color(0xFF0A1D21)),
-              decoration: const InputDecoration(
-                labelText: 'Guest house name',
-                labelStyle: TextStyle(color: Color(0xFF0A1D21)),
-              ),
-              validator: (value) {
-                final text = value?.trim() ?? '';
-                if (text.isEmpty) return 'Guest house name is required';
-                if (text.length < 3) return 'Enter at least 3 characters';
-                return null;
-              },
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(dialogContext).pop(),
-              child: const Text('Cancel'),
-            ),
-            FilledButton(
-              onPressed: () {
-                if (!(formKey.currentState?.validate() ?? false)) return;
-                Navigator.of(dialogContext).pop(controller.text.trim());
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        );
-      },
-    );
-
-    controller.dispose();
-
-    if (newName == null || newName == widget.guestHouseName) return;
-
-    try {
-      await widget.onGuestHouseNameChanged(newName);
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Unable to update guest house name: $e')),
-      );
-      return;
-    }
-
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text('Guest house name updated to "$newName"')),
-    );
-  }
-
   Future<void> _signInWithGoogle() async {
     try {
       await _authViewModel.signInWithGoogle();
@@ -128,22 +64,6 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('Google sign-in failed: $e')));
-    }
-  }
-
-  Future<void> _signOutToAnonymous() async {
-    try {
-      await _authViewModel.signOut();
-
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('Signed out')));
-    } catch (e) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text('Sign-out failed: $e')));
     }
   }
 
@@ -182,6 +102,9 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
           DashboardScreen(
             controller: _registryViewModel,
             onAddBookingForDate: _openBookingForDate,
+            guestHouseName: widget.guestHouseName,
+            guestHouseAddress: widget.guestHouseAddress,
+            guestHousePhotoBytes: widget.guestHousePhotoBytes,
           ),
           AddScreen(
             controller: _registryViewModel,
@@ -201,7 +124,6 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
             title: _GuestHouseHeaderTitle(
               guestHouseName: widget.guestHouseName,
               guestHouseAddress: widget.guestHouseAddress,
-              guestHousePhotoBytes: widget.guestHousePhotoBytes,
             ),
             titleTextStyle: Theme.of(context).textTheme.titleLarge?.copyWith(
               color: AppColors.textStrong,
@@ -210,12 +132,6 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
             centerTitle: false,
             surfaceTintColor: Colors.transparent,
             actions: [
-              IconButton(
-                onPressed: _editGuestHouseName,
-                tooltip: 'Edit guest house name',
-
-                icon: const Icon(Icons.edit_outlined, size: 20),
-              ),
               StreamBuilder<User?>(
                 stream: _authViewModel.authStateChanges(),
                 builder: (context, snapshot) {
@@ -228,47 +144,20 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
                     );
                   }
 
-                  final displayName = user.isAnonymous
-                      ? 'Guest'
-                      : (user.displayName ?? user.email ?? 'Account');
-                  final avatarText = displayName.isEmpty
-                      ? 'A'
-                      : displayName[0].toUpperCase();
-
-                  return PopupMenuButton<String>(
-                    color: Colors.white,
-                    tooltip: 'Account',
-                    onSelected: (value) {
-                      if (value == 'signin') {
-                        _signInWithGoogle();
-                      } else if (value == 'signout') {
-                        _signOutToAnonymous();
-                      }
-                    },
-                    itemBuilder: (context) => [
-                      PopupMenuItem<String>(
-                        enabled: false,
-                        value: 'label',
-                        child: Text(displayName),
-                      ),
-                      if (user.isAnonymous)
-                        const PopupMenuItem<String>(
-                          value: 'signin',
-                          child: Text('Sign in with Google'),
-                        ),
-                      const PopupMenuItem<String>(
-                        value: 'signout',
-                        child: Text('Sign out'),
-                      ),
-                    ],
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 12),
-                      child: CircleAvatar(
-                        radius: 16,
-                        backgroundColor: AppColors.revenueSoft,
-                        child: Text(
-                          avatarText,
-                          style: const TextStyle(color: AppColors.revenueDark),
+                  return _AccountAvatarButton(
+                    user: user,
+                    repository: widget.accountProfileRepository,
+                    onPressed: () => Navigator.of(context).push(
+                      MaterialPageRoute<void>(
+                        builder: (_) => AccountProfileScreen(
+                          user: user,
+                          repository: widget.accountProfileRepository,
+                          authViewModel: _authViewModel,
+                          initialGuestHouseName:
+                              widget.guestHouseName == 'Guest House Registry'
+                              ? ''
+                              : widget.guestHouseName,
+                          initialGuestHouseAddress: widget.guestHouseAddress,
                         ),
                       ),
                     ),
@@ -379,61 +268,108 @@ class _RegistryHomePageState extends State<RegistryHomePage> {
 // Shared Widgets
 // -------------------------------
 
+class _AccountAvatarButton extends StatefulWidget {
+  const _AccountAvatarButton({
+    required this.user,
+    required this.repository,
+    required this.onPressed,
+  });
+
+  final User user;
+  final AccountProfileRepository repository;
+  final VoidCallback onPressed;
+
+  @override
+  State<_AccountAvatarButton> createState() => _AccountAvatarButtonState();
+}
+
+class _AccountAvatarButtonState extends State<_AccountAvatarButton> {
+  late Stream<AccountProfile?> _profileStream;
+
+  @override
+  void initState() {
+    super.initState();
+    _profileStream = widget.repository.watchProfile(widget.user.uid);
+  }
+
+  @override
+  void didUpdateWidget(_AccountAvatarButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.user.uid != widget.user.uid ||
+        oldWidget.repository != widget.repository) {
+      _profileStream = widget.repository.watchProfile(widget.user.uid);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) => StreamBuilder<AccountProfile?>(
+    stream: _profileStream,
+    builder: (context, snapshot) {
+      final profile = snapshot.data;
+      final name =
+          profile?.name ?? widget.user.displayName ?? widget.user.email ?? '';
+      return IconButton(
+        tooltip: 'My profile',
+        onPressed: widget.onPressed,
+        icon: CircleAvatar(
+          radius: 18,
+          backgroundColor: AppColors.revenueSoft,
+          foregroundImage: profile?.photoBytes == null
+              ? null
+              : MemoryImage(profile!.photoBytes!),
+          child: profile?.photoBytes == null
+              ? name.isEmpty
+                    ? const Icon(
+                        Icons.person_outline,
+                        color: AppColors.revenueDark,
+                      )
+                    : Text(
+                        name.characters.first.toUpperCase(),
+                        style: const TextStyle(color: AppColors.revenueDark),
+                      )
+              : null,
+        ),
+      );
+    },
+  );
+}
+
 class _GuestHouseHeaderTitle extends StatelessWidget {
   const _GuestHouseHeaderTitle({
     required this.guestHouseName,
     required this.guestHouseAddress,
-    required this.guestHousePhotoBytes,
   });
 
   final String guestHouseName;
   final String guestHouseAddress;
-  final Uint8List? guestHousePhotoBytes;
-
   @override
   Widget build(BuildContext context) {
-    return Row(
+    return Column(
+      mainAxisAlignment: MainAxisAlignment.center,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        CircleAvatar(
-          radius: 24,
-          backgroundColor: AppColors.revenueSoft,
-          backgroundImage: guestHousePhotoBytes != null
-              ? MemoryImage(guestHousePhotoBytes!)
-              : null,
-          child: guestHousePhotoBytes == null
-              ? const Icon(
-                  Icons.home_work_outlined,
-                  color: AppColors.brandPrimary,
-                )
-              : null,
-        ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                guestHouseName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                  color: AppColors.textStrong,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                guestHouseAddress,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(
-                  context,
-                ).textTheme.bodySmall?.copyWith(color: const Color(0xFF475569)),
-              ),
-            ],
+        Text(
+          guestHouseName,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
+          style: Theme.of(context).textTheme.titleLarge?.copyWith(
+            color: AppColors.brandPrimary,
+            fontWeight: FontWeight.w700,
+            letterSpacing: -0.3,
           ),
         ),
+        if (guestHouseAddress.trim().isNotEmpty) ...[
+          const SizedBox(height: 2),
+          Text(
+            guestHouseAddress,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: Theme.of(
+              context,
+            ).textTheme.bodySmall?.copyWith(color: const Color(0xFF475569)),
+          ),
+        ],
       ],
     );
   }
@@ -520,9 +456,10 @@ class _ReceiptRow extends StatelessWidget {
             fontWeight: FontWeight.w700,
             color: valueColor ?? Theme.of(context).colorScheme.primary,
           )
-        : Theme.of(
-            context,
-          ).textTheme.bodyMedium?.copyWith(fontWeight: FontWeight.w600, color: valueColor);
+        : Theme.of(context).textTheme.bodyMedium?.copyWith(
+            fontWeight: FontWeight.w600,
+            color: valueColor,
+          );
 
     return Padding(
       padding: const EdgeInsets.only(bottom: 8),

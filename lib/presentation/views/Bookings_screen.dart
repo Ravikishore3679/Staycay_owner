@@ -167,9 +167,14 @@ class _BookingsScreenState extends State<BookingsScreen> {
     return null;
   }
 
-  Future<Uint8List> _buildBookingReceiptPdf(Booking booking) async {
+  static Future<Uint8List> _buildBookingReceiptPdf(
+    Booking booking, {
+    required String guestHouseName,
+    required String guestHouseAddress,
+    required Uint8List? guestHousePhotoBytes,
+  }) async {
     final pdf = pw.Document();
-    final photoBytes = widget.guestHousePhotoBytes;
+    final photoBytes = guestHousePhotoBytes;
 
     pw.Widget buildModernRow(
       String label,
@@ -193,12 +198,18 @@ class _BookingsScreenState extends State<BookingsScreen> {
               label,
               style: const pw.TextStyle(color: PdfColors.grey600, fontSize: 10),
             ),
-            pw.Text(
-              value,
-              style: pw.TextStyle(
-                color: valueColor,
-                fontSize: 10,
-                fontWeight: isBold ? pw.FontWeight.bold : pw.FontWeight.normal,
+            pw.SizedBox(width: 12),
+            pw.Expanded(
+              child: pw.Text(
+                value,
+                textAlign: pw.TextAlign.right,
+                style: pw.TextStyle(
+                  color: valueColor,
+                  fontSize: 10,
+                  fontWeight: isBold
+                      ? pw.FontWeight.bold
+                      : pw.FontWeight.normal,
+                ),
               ),
             ),
           ],
@@ -207,7 +218,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
     }
 
     pdf.addPage(
-      pw.Page(
+      pw.MultiPage(
         margin: const pw.EdgeInsets.all(
           32,
         ), // Increased margin for an elegant border breathing room
@@ -225,257 +236,254 @@ class _BookingsScreenState extends State<BookingsScreen> {
           const alertColor =
               PdfColors.deepOrange800; // Contrast color for remaining dues
 
-          return pw.Column(
-            crossAxisAlignment: pw.CrossAxisAlignment.start,
-            children: [
-              // --- HEADER SECTION ---
-              pw.Container(
-                width: double.infinity,
-                padding: const pw.EdgeInsets.all(16),
-                decoration: pw.BoxDecoration(
-                  color: bgHeader,
-                  borderRadius: const pw.BorderRadius.all(
-                    pw.Radius.circular(8),
-                  ),
-                ),
-                child: pw.Row(
-                  crossAxisAlignment: pw.CrossAxisAlignment.start,
-                  children: [
-                    if (photoBytes != null)
-                      pw.Container(
-                        width: 70,
-                        height: 70,
-                        margin: const pw.EdgeInsets.only(right: 16),
-                        decoration: pw.BoxDecoration(
-                          borderRadius: pw.BorderRadius.circular(8),
-                          border: pw.Border.all(
-                            color: PdfColors.grey300,
-                            width: 1,
-                          ),
-                        ),
-                        child: pw.ClipRRect(
-                          horizontalRadius: 7,
-                          verticalRadius: 7,
-                          child: pw.Image(
-                            pw.MemoryImage(photoBytes),
-                            fit: pw.BoxFit.cover,
-                          ),
+          return [
+            // --- HEADER SECTION ---
+            pw.Container(
+              width: double.infinity,
+              padding: const pw.EdgeInsets.all(16),
+              decoration: pw.BoxDecoration(
+                color: bgHeader,
+                borderRadius: const pw.BorderRadius.all(pw.Radius.circular(8)),
+              ),
+              child: pw.Row(
+                crossAxisAlignment: pw.CrossAxisAlignment.start,
+                children: [
+                  if (photoBytes != null)
+                    pw.Container(
+                      width: 70,
+                      height: 70,
+                      margin: const pw.EdgeInsets.only(right: 16),
+                      decoration: pw.BoxDecoration(
+                        borderRadius: pw.BorderRadius.circular(8),
+                        border: pw.Border.all(
+                          color: PdfColors.grey300,
+                          width: 1,
                         ),
                       ),
-                    pw.Expanded(
-                      child: pw.Column(
-                        crossAxisAlignment: pw.CrossAxisAlignment.start,
-                        children: [
+                      child: pw.ClipRRect(
+                        horizontalRadius: 7,
+                        verticalRadius: 7,
+                        child: pw.Image(
+                          pw.MemoryImage(photoBytes),
+                          fit: pw.BoxFit.cover,
+                        ),
+                      ),
+                    ),
+                  pw.Expanded(
+                    child: pw.Column(
+                      crossAxisAlignment: pw.CrossAxisAlignment.start,
+                      children: [
+                        pw.Text(
+                          guestHouseName.toUpperCase(),
+                          style: pw.TextStyle(
+                            fontSize: 16,
+                            fontWeight: pw.FontWeight.bold,
+                            color: primaryColor,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                        if (guestHouseAddress.trim().isNotEmpty) ...[
+                          pw.SizedBox(height: 2),
                           pw.Text(
-                            widget.guestHouseName.toUpperCase(),
-                            style: pw.TextStyle(
-                              fontSize: 16,
-                              fontWeight: pw.FontWeight.bold,
-                              color: primaryColor,
-                              letterSpacing: 0.5,
+                            guestHouseAddress,
+                            style: const pw.TextStyle(
+                              fontSize: 9,
+                              color: textMuted,
                             ),
                           ),
-                          if (widget.guestHouseAddress.trim().isNotEmpty) ...[
-                            pw.SizedBox(height: 2),
-                            pw.Text(
-                              widget.guestHouseAddress,
-                              style: const pw.TextStyle(
-                                fontSize: 9,
-                                color: textMuted,
+                        ],
+                        pw.SizedBox(height: 8),
+                        pw.Container(
+                          height: 1,
+                          color: PdfColors.grey300,
+                          margin: const pw.EdgeInsets.only(bottom: 8),
+                        ),
+                        pw.Row(
+                          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
+                          children: [
+                            pw.Column(
+                              crossAxisAlignment: pw.CrossAxisAlignment.start,
+                              children: [
+                                pw.Text(
+                                  'Receipt ID: ${booking.id}',
+                                  style: pw.TextStyle(
+                                    color: textDark,
+                                    fontSize: 9,
+                                    fontWeight: pw.FontWeight.bold,
+                                  ),
+                                ),
+                                pw.Text(
+                                  'Issued On: ${_formatDate(DateTime.now())}',
+                                  style: const pw.TextStyle(
+                                    color: textMuted,
+                                    fontSize: 9,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            pw.Container(
+                              padding: const pw.EdgeInsets.symmetric(
+                                horizontal: 10,
+                                vertical: 4,
+                              ),
+                              decoration: const pw.BoxDecoration(
+                                color: primaryColor,
+                                borderRadius: pw.BorderRadius.all(
+                                  pw.Radius.circular(4),
+                                ),
+                              ),
+                              child: pw.Text(
+                                'BOOKING RECEIPT',
+                                style: pw.TextStyle(
+                                  color: PdfColors.white,
+                                  fontSize: 9,
+                                  fontWeight: pw.FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
                               ),
                             ),
                           ],
-                          pw.SizedBox(height: 8),
-                          pw.Container(
-                            height: 1,
-                            color: PdfColors.grey300,
-                            margin: const pw.EdgeInsets.only(bottom: 8),
-                          ),
-                          pw.Row(
-                            mainAxisAlignment:
-                                pw.MainAxisAlignment.spaceBetween,
-                            children: [
-                              pw.Column(
-                                crossAxisAlignment: pw.CrossAxisAlignment.start,
-                                children: [
-                                  pw.Text(
-                                    'Receipt ID: ${booking.id}',
-                                    style: pw.TextStyle(
-                                      color: textDark,
-                                      fontSize: 9,
-                                      fontWeight: pw.FontWeight.bold,
-                                    ),
-                                  ),
-                                  pw.Text(
-                                    'Issued On: ${_formatDate(DateTime.now())}',
-                                    style: const pw.TextStyle(
-                                      color: textMuted,
-                                      fontSize: 9,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              pw.Container(
-                                padding: const pw.EdgeInsets.symmetric(
-                                  horizontal: 10,
-                                  vertical: 4,
-                                ),
-                                decoration: const pw.BoxDecoration(
-                                  color: primaryColor,
-                                  borderRadius: pw.BorderRadius.all(
-                                    pw.Radius.circular(4),
-                                  ),
-                                ),
-                                child: pw.Text(
-                                  'BOOKING RECEIPT',
-                                  style: pw.TextStyle(
-                                    color: PdfColors.white,
-                                    fontSize: 9,
-                                    fontWeight: pw.FontWeight.bold,
-                                    letterSpacing: 0.5,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            pw.SizedBox(height: 24),
+
+            // --- DETAILS SECTION TITLE ---
+            pw.Text(
+              'RESERVATION DETAILS',
+              style: pw.TextStyle(
+                fontSize: 11,
+                fontWeight: pw.FontWeight.bold,
+                color: primaryColor,
+                letterSpacing: 0.8,
+              ),
+            ),
+            pw.SizedBox(height: 6),
+            pw.Container(height: 2, color: accentColor),
+            pw.SizedBox(height: 8),
+
+            // --- GRID/TABLE DATA LIST ---
+            // Helper closures for rendering elegant alternate rows
+            buildModernRow('Guest Name', booking.name, textDark, false, false),
+            buildModernRow('Phone', booking.phone, textDark, true, false),
+            buildModernRow('Aadhaar', booking.aadhaar, textDark, false, false),
+            buildModernRow(
+              'Check-in',
+              _formatDate(booking.checkIn),
+              textDark,
+              true,
+              false,
+            ),
+            buildModernRow(
+              'Check-out',
+              _formatDate(booking.checkOut),
+              textDark,
+              false,
+              false,
+            ),
+            buildModernRow(
+              'Guests',
+              booking.guests.toString(),
+              textDark,
+              false,
+              false,
+            ),
+            buildModernRow(
+              'Status',
+              booking.isCancelled ? 'Cancelled' : 'Active',
+              booking.isCancelled ? alertColor : textDark,
+              false,
+              true,
+            ),
+            buildModernRow(
+              'Total Amount',
+              _currency(booking.totalAmount),
+              textDark,
+              true,
+              false,
+            ),
+            buildModernRow(
+              'Advance Paid',
+              _currency(booking.advancePaid),
+              accentColor,
+              false,
+              true,
+            ),
+            if (booking.balancePaid > 0)
+              buildModernRow(
+                'Balance Paid',
+                _currency(booking.balancePaid),
+                accentColor,
+                false,
+                true,
+              ),
+            if (booking.isCancelled)
+              buildModernRow(
+                'Refunded',
+                _currency(booking.refundedAmount),
+                textDark,
+                false,
+                true,
+              ),
+            buildModernRow(
+              'Remaining Amount',
+              _currency(booking.remainingAmount),
+              alertColor,
+              true,
+              true, // Bold text
+            ),
+
+            pw.SizedBox(height: 28),
+
+            // --- HOUSE RULES SECTION ---
+            pw.Text(
+              'HOUSE & STAY RULES',
+              style: pw.TextStyle(
+                fontSize: 11,
+                fontWeight: pw.FontWeight.bold,
+                color: primaryColor,
+                letterSpacing: 0.8,
+              ),
+            ),
+            pw.SizedBox(height: 6),
+            pw.Container(height: 1.5, color: PdfColors.grey300),
+            pw.SizedBox(height: 10),
+
+            ..._houseRules.map(
+              (rule) => pw.Padding(
+                padding: const pw.EdgeInsets.only(bottom: 8),
+                child: pw.Row(
+                  crossAxisAlignment: pw.CrossAxisAlignment.start,
+                  children: [
+                    pw.Container(
+                      margin: const pw.EdgeInsets.only(top: 4, right: 8),
+                      width: 4,
+                      height: 4,
+                      decoration: const pw.BoxDecoration(
+                        color: accentColor,
+                        shape: pw.BoxShape.circle,
+                      ),
+                    ),
+                    pw.Expanded(
+                      child: pw.Text(
+                        rule,
+                        style: const pw.TextStyle(
+                          color: textDark,
+                          fontSize: 10,
+                          lineSpacing: 1.2,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-
-              pw.SizedBox(height: 24),
-
-              // --- DETAILS SECTION TITLE ---
-              pw.Text(
-                'RESERVATION DETAILS',
-                style: pw.TextStyle(
-                  fontSize: 11,
-                  fontWeight: pw.FontWeight.bold,
-                  color: primaryColor,
-                  letterSpacing: 0.8,
-                ),
-              ),
-              pw.SizedBox(height: 6),
-              pw.Container(height: 2, color: accentColor),
-              pw.SizedBox(height: 8),
-
-              // --- GRID/TABLE DATA LIST ---
-              // Helper closures for rendering elegant alternate rows
-              buildModernRow(
-                'Guest Name',
-                booking.name,
-                textDark,
-                false,
-                false,
-              ),
-              buildModernRow('Phone', booking.phone, textDark, true, false),
-              buildModernRow(
-                'Aadhaar',
-                booking.aadhaar,
-                textDark,
-                false,
-                false,
-              ),
-              buildModernRow(
-                'Check-in',
-                _formatDate(booking.checkIn),
-                textDark,
-                true,
-                false,
-              ),
-              buildModernRow(
-                'Check-out',
-                _formatDate(booking.checkOut),
-                textDark,
-                false,
-                false,
-              ),
-              buildModernRow(
-                'Guests',
-                booking.guests.toString(),
-                textDark,
-                false,
-                false,
-              ),
-              buildModernRow(
-                'Total Amount',
-                _currency(booking.totalAmount),
-                textDark,
-                true,
-                false,
-              ),
-              buildModernRow(
-                'Advance Paid',
-                _currency(booking.advancePaid),
-                accentColor,
-                false,
-                true,
-              ),
-              if (booking.balancePaid > 0)
-                buildModernRow(
-                  'Balance Paid',
-                  _currency(booking.balancePaid),
-                  accentColor,
-                  false,
-                  true,
-                ),
-              buildModernRow(
-                'Remaining Amount',
-                _currency(booking.remainingAmount),
-                alertColor,
-                true,
-                true, // Bold text
-              ),
-
-              pw.SizedBox(height: 28),
-
-              // --- HOUSE RULES SECTION ---
-              pw.Text(
-                'HOUSE & STAY RULES',
-                style: pw.TextStyle(
-                  fontSize: 11,
-                  fontWeight: pw.FontWeight.bold,
-                  color: primaryColor,
-                  letterSpacing: 0.8,
-                ),
-              ),
-              pw.SizedBox(height: 6),
-              pw.Container(height: 1.5, color: PdfColors.grey300),
-              pw.SizedBox(height: 10),
-
-              ..._houseRules.map(
-                (rule) => pw.Padding(
-                  padding: const pw.EdgeInsets.only(bottom: 8),
-                  child: pw.Row(
-                    crossAxisAlignment: pw.CrossAxisAlignment.start,
-                    children: [
-                      pw.Container(
-                        margin: const pw.EdgeInsets.only(top: 4, right: 8),
-                        width: 4,
-                        height: 4,
-                        decoration: const pw.BoxDecoration(
-                          color: accentColor,
-                          shape: pw.BoxShape.circle,
-                        ),
-                      ),
-                      pw.Expanded(
-                        child: pw.Text(
-                          rule,
-                          style: const pw.TextStyle(
-                            color: textDark,
-                            fontSize: 10,
-                            lineSpacing: 1.2,
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
-          );
+            ),
+          ];
         },
       ),
     );
@@ -523,7 +531,12 @@ class _BookingsScreenState extends State<BookingsScreen> {
   Future<void> _downloadBookingReceiptPdf(Booking booking) async {
     try {
       FocusManager.instance.primaryFocus?.unfocus();
-      final bytes = await _buildBookingReceiptPdf(booking);
+      final bytes = await _buildBookingReceiptPdf(
+        booking,
+        guestHouseName: widget.guestHouseName,
+        guestHouseAddress: widget.guestHouseAddress,
+        guestHousePhotoBytes: widget.guestHousePhotoBytes,
+      );
       final safeName = booking.name
           .trim()
           .replaceAll(RegExp(r'[^a-zA-Z0-9_-]+'), '_')

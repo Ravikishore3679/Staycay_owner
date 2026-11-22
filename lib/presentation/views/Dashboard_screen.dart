@@ -5,16 +5,23 @@ class DashboardScreen extends StatefulWidget {
     super.key,
     required this.controller,
     required this.onAddBookingForDate,
+    required this.guestHouseName,
+    required this.guestHouseAddress,
+    required this.guestHousePhotoBytes,
   });
 
   final RegistryViewModel controller;
   final ValueChanged<DateTime> onAddBookingForDate;
+  final String guestHouseName;
+  final String guestHouseAddress;
+  final Uint8List? guestHousePhotoBytes;
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingObserver {
+class _DashboardScreenState extends State<DashboardScreen>
+    with WidgetsBindingObserver {
   DateTime _visibleMonth = DateUtils.dateOnly(DateTime.now());
   DateTime _selectedDate = DateUtils.dateOnly(DateTime.now());
   Timer? _midnightTimer;
@@ -67,7 +74,9 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
     final day = DateUtils.dateOnly(date);
     final checkIn = DateUtils.dateOnly(booking.checkIn);
     final checkOut = DateUtils.dateOnly(booking.checkOut);
-    return !booking.isCancelled && !day.isBefore(checkIn) && day.isBefore(checkOut);
+    return !booking.isCancelled &&
+        !day.isBefore(checkIn) &&
+        day.isBefore(checkOut);
   }
 
   void _showBookingDetails(Booking booking) {
@@ -78,170 +87,314 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
       context: context,
       builder: (context) => StatefulBuilder(
         builder: (dialogContext, setDialogState) => AlertDialog(
-        title: const Text('Booking details'),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
+          backgroundColor: Colors.white,
+          surfaceTintColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 24,
+          ),
+          titlePadding: const EdgeInsets.fromLTRB(24, 22, 24, 12),
+          contentPadding: const EdgeInsets.fromLTRB(24, 0, 24, 8),
+          actionsPadding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+          title: Row(
             children: [
-              _ReceiptRow(label: 'Guest name', value: currentBooking.name),
-              _ReceiptRow(label: 'Phone', value: currentBooking.phone),
-              _ReceiptRow(
-                label: 'Aadhaar',
-                value: currentBooking.aadhaar.isEmpty
-                    ? 'Not provided'
-                    : currentBooking.aadhaar,
-              ),
-              _ReceiptRow(
-                label: 'Check-in',
-                value: _formatDate(currentBooking.checkIn),
-              ),
-              _ReceiptRow(
-                label: 'Check-out',
-                value: _formatDate(currentBooking.checkOut),
-              ),
-              _ReceiptRow(label: 'Guests', value: '${currentBooking.guests}'),
-              _ReceiptRow(
-                label: 'Status',
-                value: currentBooking.isCancelled ? 'Cancelled' : 'Active',
-              ),
-              _ReceiptRow(
-                label: 'Total amount',
-                value: _currency(currentBooking.totalAmount),
-              ),
-              _ReceiptRow(
-                label: 'Advance paid',
-                value: _currency(currentBooking.advancePaid),
-              ),
-              _ReceiptRow(
-                label: 'Balance paid',
-                value: _currency(currentBooking.balancePaid),
-              ),
-              if (currentBooking.isCancelled)
-                _ReceiptRow(
-                  label: 'Refunded',
-                  value: _currency(currentBooking.refundedAmount),
+              Container(
+                padding: const EdgeInsets.all(9),
+                decoration: BoxDecoration(
+                  color: AppColors.revenueSoft,
+                  borderRadius: BorderRadius.circular(12),
                 ),
-              _ReceiptRow(
-                label: 'Remaining',
-                value: _currency(currentBooking.remainingAmount),
-                emphasize: true,
-                valueColor: currentBooking.isPaymentDueOn(DateTime.now())
-                    ? AppColors.expenseDark
-                    : null,
+                child: const Icon(
+                  Icons.event_note_outlined,
+                  color: AppColors.revenueDark,
+                ),
               ),
-              if (currentBooking.isCancelled)
-                const Text('Cancelled booking')
-              else if (currentBooking.remainingAmount > 0)
-                Text(
-                  '${currentBooking.isPaymentDueOn(DateTime.now()) ? 'Payment due' : 'Balance due'} on ${_formatDate(currentBooking.checkIn)}',
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                    color: currentBooking.isPaymentDueOn(DateTime.now())
-                        ? AppColors.expenseDark
-                        : null,
-                    fontWeight: currentBooking.isPaymentDueOn(DateTime.now())
-                        ? FontWeight.w700
-                        : null,
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  'Booking details',
+                  style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                    color: AppColors.textStrong,
+                    fontWeight: FontWeight.w700,
                   ),
-                )
-              else
-                const Text('Paid in full'),
-              if (actionError != null)
-                Text(
-                  actionError!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
                 ),
+              ),
             ],
           ),
-        ),
-        actions: [
-          if (!currentBooking.isCancelled)
-            TextButton(
-              onPressed: saving ? null : () {
-                Navigator.of(dialogContext).pop();
-                _BookingsScreenState._editBooking(
-                  this.context,
-                  widget.controller,
-                  currentBooking,
-                );
-              },
-              child: const Text('Modify'),
-            ),
-          if (!currentBooking.isCancelled ||
-              (currentBooking.refundedAmount == 0 && currentBooking.grossPaid > 0))
-            TextButton(
-              onPressed: saving ? null : () async {
-                final refund = currentBooking.isCancelled;
-                final confirmed = await showDialog<bool>(
-                  context: dialogContext,
-                  builder: (confirmContext) => AlertDialog(
-                    title: Text(refund ? 'Record full refund?' : 'Cancel booking?'),
-                    content: Text(refund
-                        ? 'Confirm that ${_currency(currentBooking.grossPaid)} has already been returned to the guest. This only records the refund; it does not transfer money.'
-                        : 'The booking will be cancelled and removed from the calendar. Payments remain recorded, and you can record a full refund later.'),
-                    actions: [
-                      TextButton(
-                        onPressed: () => Navigator.pop(confirmContext, false),
-                        child: const Text('Go back'),
-                      ),
-                      FilledButton(
-                        onPressed: () => Navigator.pop(confirmContext, true),
-                        child: Text(refund ? 'Confirm refund' : 'Confirm cancellation'),
-                      ),
-                    ],
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                _BookingDetailHeading(
+                  title: 'Guest & stay',
+                  status: currentBooking.isCancelled ? 'Cancelled' : 'Active',
+                  cancelled: currentBooking.isCancelled,
+                ),
+                const SizedBox(height: 12),
+                _ReceiptRow(label: 'Guest name', value: currentBooking.name),
+                _ReceiptRow(label: 'Phone', value: currentBooking.phone),
+                _ReceiptRow(
+                  label: 'Aadhaar',
+                  value: currentBooking.aadhaar.isEmpty
+                      ? 'Not provided'
+                      : currentBooking.aadhaar,
+                ),
+                _ReceiptRow(
+                  label: 'Check-in',
+                  value: _formatDate(currentBooking.checkIn),
+                ),
+                _ReceiptRow(
+                  label: 'Check-out',
+                  value: _formatDate(currentBooking.checkOut),
+                ),
+                _ReceiptRow(label: 'Guests', value: '${currentBooking.guests}'),
+                const SizedBox(height: 4),
+                const Divider(height: 24),
+                const _BookingDetailHeading(title: 'Payment summary'),
+                const SizedBox(height: 12),
+                _ReceiptRow(
+                  label: 'Total amount',
+                  value: _currency(currentBooking.totalAmount),
+                ),
+                _ReceiptRow(
+                  label: 'Advance paid',
+                  value: _currency(currentBooking.advancePaid),
+                ),
+                _ReceiptRow(
+                  label: 'Balance paid',
+                  value: _currency(currentBooking.balancePaid),
+                ),
+                if (currentBooking.isCancelled)
+                  _ReceiptRow(
+                    label: 'Refunded',
+                    value: _currency(currentBooking.refundedAmount),
                   ),
-                );
-                if (confirmed != true || !dialogContext.mounted) return;
-                setDialogState(() {
-                  saving = true;
-                  actionError = null;
-                });
-                try {
-                  final updated = refund
-                      ? await widget.controller.refundBooking(currentBooking.id)
-                      : await widget.controller.cancelBooking(currentBooking.id);
-                  if (!dialogContext.mounted || !mounted) return;
-                  setDialogState(() {
-                    currentBooking = updated;
-                    saving = false;
-                  });
-                  setState(() {});
-                } catch (e) {
-                  if (!dialogContext.mounted || !mounted) return;
-                  setDialogState(() {
-                    saving = false;
-                    actionError = refund
-                        ? 'Unable to record refund: $e'
-                        : 'Unable to cancel booking: $e';
-                  });
-                }
-              },
-              child: Text(currentBooking.isCancelled ? 'Record full refund' : 'Cancel booking'),
-            ),
-          if (currentBooking.remainingAmount > 0)
-            FilledButton(
-              onPressed: () async {
-                final updated = await showDialog<Booking>(
-                  context: dialogContext,
-                  barrierDismissible: false,
-                  builder: (_) => _BookingPaymentDialog(
-                    booking: currentBooking,
-                    controller: widget.controller,
+                _ReceiptRow(
+                  label: 'Remaining',
+                  value: _currency(currentBooking.remainingAmount),
+                  emphasize: true,
+                  valueColor: currentBooking.isPaymentDueOn(DateTime.now())
+                      ? AppColors.expenseDark
+                      : null,
+                ),
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 10,
                   ),
-                );
-                if (updated != null && dialogContext.mounted) {
-                  setDialogState(() => currentBooking = updated);
-                  if (mounted) setState(() {});
-                }
-              },
-              child: const Text('Record payment'),
+                  decoration: BoxDecoration(
+                    color: currentBooking.isPaymentDueOn(DateTime.now())
+                        ? AppColors.expenseSoft
+                        : AppColors.appBackground,
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    currentBooking.isCancelled
+                        ? 'Cancelled booking'
+                        : currentBooking.remainingAmount > 0
+                        ? '${currentBooking.isPaymentDueOn(DateTime.now()) ? 'Payment due' : 'Balance due'} on ${_formatDate(currentBooking.checkIn)}'
+                        : 'Paid in full',
+                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                      color: currentBooking.isPaymentDueOn(DateTime.now())
+                          ? AppColors.expenseDark
+                          : AppColors.brandPrimary,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ],
             ),
-          TextButton(
-            onPressed: saving ? null : () => Navigator.of(dialogContext).pop(),
-            child: const Text('Close'),
           ),
-        ],
-      ),
+          actions: [
+            if (actionError != null)
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                child: ConstrainedBox(
+                  constraints: const BoxConstraints(maxHeight: 72),
+                  child: SingleChildScrollView(
+                    child: Text(
+                      actionError!,
+                      style: TextStyle(color: Theme.of(context).colorScheme.error),
+                    ),
+                  ),
+                ),
+              ),
+            Row(
+              children: [
+                if (currentBooking.remainingAmount > 0)
+                  Expanded(
+                    child: FilledButton.icon(
+                  onPressed: saving
+                      ? null
+                      : () async {
+                          final updated = await showDialog<Booking>(
+                            context: dialogContext,
+                            barrierDismissible: false,
+                            builder: (_) => _BookingPaymentDialog(
+                              booking: currentBooking,
+                              controller: widget.controller,
+                            ),
+                          );
+                          if (updated != null && dialogContext.mounted) {
+                            setDialogState(() => currentBooking = updated);
+                            if (mounted) setState(() {});
+                          }
+                        },
+                  icon: const Icon(Icons.payments_outlined),
+                  label: const Text('Record payment'),
+                    ),
+                  )
+                else
+                  const Spacer(),
+                const SizedBox(width: 8),
+                IconButton.outlined(
+                  tooltip: 'Reprint receipt',
+                  onPressed: saving ? null : () async {
+                    setDialogState(() {
+                      saving = true;
+                      actionError = null;
+                    });
+                    try {
+                      final matches = widget.controller.bookings.where(
+                        (item) => item.id == currentBooking.id,
+                      );
+                      if (matches.isEmpty) {
+                        throw StateError('Booking is no longer available.');
+                      }
+                      final latest = matches.first;
+                      final bytes = await _BookingsScreenState._buildBookingReceiptPdf(
+                        latest,
+                        guestHouseName: widget.guestHouseName,
+                        guestHouseAddress: widget.guestHouseAddress,
+                        guestHousePhotoBytes: widget.guestHousePhotoBytes,
+                      );
+                      await Printing.layoutPdf(
+                        name: 'Booking receipt ${latest.id}',
+                        onLayout: (_) async => bytes,
+                      );
+                      if (!dialogContext.mounted || !mounted) return;
+                      setDialogState(() => currentBooking = latest);
+                    } catch (e) {
+                      if (!dialogContext.mounted || !mounted) return;
+                      setDialogState(() => actionError = 'Unable to print receipt: $e');
+                    } finally {
+                      if (dialogContext.mounted && mounted) {
+                        setDialogState(() => saving = false);
+                      }
+                    }
+                  },
+                  icon: const Icon(Icons.print_outlined),
+                ),
+              ],
+            ),
+            Wrap(
+              alignment: WrapAlignment.spaceBetween,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                if (!currentBooking.isCancelled)
+                  TextButton(
+                    onPressed: saving
+                        ? null
+                        : () {
+                            Navigator.of(dialogContext).pop();
+                            _BookingsScreenState._editBooking(
+                              this.context,
+                              widget.controller,
+                              currentBooking,
+                            );
+                          },
+                    child: const Text('Modify'),
+                  ),
+                if (!currentBooking.isCancelled ||
+                    (currentBooking.refundedAmount == 0 &&
+                        currentBooking.grossPaid > 0))
+                  TextButton(
+                    onPressed: saving
+                        ? null
+                        : () async {
+                            final refund = currentBooking.isCancelled;
+                            final confirmed = await showDialog<bool>(
+                              context: dialogContext,
+                              builder: (confirmContext) => AlertDialog(
+                                title: Text(
+                                  refund
+                                      ? 'Record full refund?'
+                                      : 'Cancel booking?',
+                                ),
+                                content: Text(
+                                  refund
+                                      ? 'Confirm that ${_currency(currentBooking.grossPaid)} has already been returned to the guest. This only records the refund; it does not transfer money.'
+                                      : 'The booking will be cancelled and removed from the calendar. Payments remain recorded, and you can record a full refund later.',
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () =>
+                                        Navigator.pop(confirmContext, false),
+                                    child: const Text('Go back'),
+                                  ),
+                                  FilledButton(
+                                    onPressed: () =>
+                                        Navigator.pop(confirmContext, true),
+                                    child: Text(
+                                      refund
+                                          ? 'Confirm refund'
+                                          : 'Confirm cancellation',
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            );
+                            if (confirmed != true || !dialogContext.mounted)
+                              return;
+                            setDialogState(() {
+                              saving = true;
+                              actionError = null;
+                            });
+                            try {
+                              final updated = refund
+                                  ? await widget.controller.refundBooking(
+                                      currentBooking.id,
+                                    )
+                                  : await widget.controller.cancelBooking(
+                                      currentBooking.id,
+                                    );
+                              if (!dialogContext.mounted || !mounted) return;
+                              setDialogState(() {
+                                currentBooking = updated;
+                                saving = false;
+                              });
+                              setState(() {});
+                            } catch (e) {
+                              if (!dialogContext.mounted || !mounted) return;
+                              setDialogState(() {
+                                saving = false;
+                                actionError = refund
+                                    ? 'Unable to record refund: $e'
+                                    : 'Unable to cancel booking: $e';
+                              });
+                            }
+                          },
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.expenseDark,
+                    ),
+                    child: Text(
+                      currentBooking.isCancelled
+                          ? 'Record full refund'
+                          : 'Cancel booking',
+                    ),
+                  ),
+                TextButton(
+                  onPressed: saving
+                      ? null
+                      : () => Navigator.of(dialogContext).pop(),
+                  child: const Text('Close'),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -290,8 +443,9 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
       _visibleMonth.month,
     )..sort((a, b) => b.date.compareTo(a.date));
     final allBookings = widget.controller.bookings;
-    final dueBookings = allBookings.where((booking) => booking.isPaymentDueOn(now)).toList()
-      ..sort((a, b) => a.checkIn.compareTo(b.checkIn));
+    final dueBookings =
+        allBookings.where((booking) => booking.isPaymentDueOn(now)).toList()
+          ..sort((a, b) => a.checkIn.compareTo(b.checkIn));
     final selectedDateBookings = allBookings
         .where((booking) => _isStayDate(booking, _selectedDate))
         .toList();
@@ -459,15 +613,31 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
             _HomeSectionCard(
               title: 'Payments due',
               child: Column(
-                children: dueBookings.map((booking) => ListTile(
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
-                  leading: const Icon(Icons.payment_outlined, color: AppColors.expenseDark),
-                  title: Text(booking.name),
-                  subtitle: Text('Due ${_formatDate(booking.checkIn)}', style: const TextStyle(color: AppColors.expenseDark)),
-                  trailing: Text(_currency(booking.remainingAmount), style: const TextStyle(color: AppColors.expenseDark, fontWeight: FontWeight.w700)),
-                  onTap: () => _showBookingDetails(booking),
-                )).toList(),
+                children: dueBookings
+                    .map(
+                      (booking) => ListTile(
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                        leading: const Icon(
+                          Icons.payment_outlined,
+                          color: AppColors.expenseDark,
+                        ),
+                        title: Text(booking.name),
+                        subtitle: Text(
+                          'Due ${_formatDate(booking.checkIn)}',
+                          style: const TextStyle(color: AppColors.expenseDark),
+                        ),
+                        trailing: Text(
+                          _currency(booking.remainingAmount),
+                          style: const TextStyle(
+                            color: AppColors.expenseDark,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                        onTap: () => _showBookingDetails(booking),
+                      ),
+                    )
+                    .toList(),
               ),
             ),
             const SizedBox(height: 16),
@@ -477,18 +647,25 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
             child: monthBookings.where((booking) => booking.isCancelled).isEmpty
                 ? const Text('No cancelled bookings this month.')
                 : Column(
-                    children: monthBookings.where((booking) => booking.isCancelled).map(
-                      (booking) => ListTile(
-                        contentPadding: EdgeInsets.zero,
-                        leading: const Icon(Icons.event_busy_outlined),
-                        title: Text(booking.name),
-                        subtitle: Text('Cancelled · ${_formatDate(booking.checkIn)}'),
-                        trailing: Text(booking.refundedAmount > 0
-                            ? 'Refunded'
-                            : _currency(booking.grossPaid)),
-                        onTap: () => _showBookingDetails(booking),
-                      ),
-                    ).toList(),
+                    children: monthBookings
+                        .where((booking) => booking.isCancelled)
+                        .map(
+                          (booking) => ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: const Icon(Icons.event_busy_outlined),
+                            title: Text(booking.name),
+                            subtitle: Text(
+                              'Cancelled · ${_formatDate(booking.checkIn)}',
+                            ),
+                            trailing: Text(
+                              booking.refundedAmount > 0
+                                  ? 'Refunded'
+                                  : _currency(booking.grossPaid),
+                            ),
+                            onTap: () => _showBookingDetails(booking),
+                          ),
+                        )
+                        .toList(),
                   ),
           ),
           const SizedBox(height: 16),
@@ -557,7 +734,9 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
         );
         final hasStay = bookings.any((booking) => _isStayDate(booking, date));
         final hasPaymentDue = bookings.any(
-          (booking) => _isStayDate(booking, date) && booking.isPaymentDueOn(DateTime.now()),
+          (booking) =>
+              _isStayDate(booking, date) &&
+              booking.isPaymentDueOn(DateTime.now()),
         );
         final isToday = DateUtils.isSameDay(date, DateTime.now());
         final isSelected = DateUtils.isSameDay(date, _selectedDate);
@@ -613,8 +792,58 @@ class _DashboardScreenState extends State<DashboardScreen> with WidgetsBindingOb
   }
 }
 
+class _BookingDetailHeading extends StatelessWidget {
+  const _BookingDetailHeading({
+    required this.title,
+    this.status,
+    this.cancelled = false,
+  });
+
+  final String title;
+  final String? status;
+  final bool cancelled;
+
+  @override
+  Widget build(BuildContext context) {
+    return Wrap(
+      spacing: 10,
+      runSpacing: 6,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        Text(
+          title,
+          style: Theme.of(context).textTheme.titleSmall?.copyWith(
+            color: AppColors.textStrong,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+        if (status != null)
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: cancelled ? AppColors.expenseSoft : AppColors.revenueSoft,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              status!,
+              style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                color: cancelled
+                    ? AppColors.expenseDark
+                    : AppColors.revenueDark,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
 class _BookingPaymentDialog extends StatefulWidget {
-  const _BookingPaymentDialog({required this.booking, required this.controller});
+  const _BookingPaymentDialog({
+    required this.booking,
+    required this.controller,
+  });
 
   final Booking booking;
   final RegistryViewModel controller;
@@ -670,63 +899,65 @@ class _BookingPaymentDialogState extends State<_BookingPaymentDialog> {
     return PopScope(
       canPop: !_saving,
       child: AlertDialog(
-      title: const Text('Record payment'),
-      content: SingleChildScrollView(
-        child: Form(
-          key: _formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text('Remaining: ${_currency(widget.booking.remainingAmount)}'),
-              const SizedBox(height: 16),
-              TextFormField(
-                controller: _amountController,
-                enabled: !_saving,
-                autofocus: true,
-                keyboardType: const TextInputType.numberWithOptions(
-                  decimal: true,
+        title: const Text('Record payment'),
+        content: SingleChildScrollView(
+          child: Form(
+            key: _formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Remaining: ${_currency(widget.booking.remainingAmount)}'),
+                const SizedBox(height: 16),
+                TextFormField(
+                  controller: _amountController,
+                  enabled: !_saving,
+                  autofocus: true,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
+                  decoration: const InputDecoration(
+                    labelText: 'Payment amount',
+                    prefixText: 'Rs ',
+                  ),
+                  validator: (value) {
+                    final text = value?.trim() ?? '';
+                    if (!RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(text)) {
+                      return 'Enter an amount with up to 2 decimal places';
+                    }
+                    final amount = double.tryParse(text);
+                    if (amount == null || !amount.isFinite || amount <= 0) {
+                      return 'Enter an amount greater than zero';
+                    }
+                    if (amount - widget.booking.remainingAmount > 0.000001) {
+                      return 'Payment cannot exceed the remaining balance';
+                    }
+                    return null;
+                  },
                 ),
-                decoration: const InputDecoration(
-                  labelText: 'Payment amount',
-                  prefixText: 'Rs ',
-                ),
-                validator: (value) {
-                  final text = value?.trim() ?? '';
-                  if (!RegExp(r'^\d+(\.\d{1,2})?$').hasMatch(text)) {
-                    return 'Enter an amount with up to 2 decimal places';
-                  }
-                  final amount = double.tryParse(text);
-                  if (amount == null || !amount.isFinite || amount <= 0) {
-                    return 'Enter an amount greater than zero';
-                  }
-                  if (amount - widget.booking.remainingAmount > 0.000001) {
-                    return 'Payment cannot exceed the remaining balance';
-                  }
-                  return null;
-                },
-              ),
-              if (_error != null) ...[
-                const SizedBox(height: 12),
-                Text(
-                  _error!,
-                  style: TextStyle(color: Theme.of(context).colorScheme.error),
-                ),
+                if (_error != null) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    _error!,
+                    style: TextStyle(
+                      color: Theme.of(context).colorScheme.error,
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
         ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: _saving ? null : () => Navigator.of(context).pop(),
-          child: const Text('Cancel'),
-        ),
-        FilledButton(
-          onPressed: _saving ? null : _submit,
-          child: Text(_saving ? 'Saving...' : 'Save payment'),
-        ),
-      ],
+        actions: [
+          TextButton(
+            onPressed: _saving ? null : () => Navigator.of(context).pop(),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: _saving ? null : _submit,
+            child: Text(_saving ? 'Saving...' : 'Save payment'),
+          ),
+        ],
       ),
     );
   }

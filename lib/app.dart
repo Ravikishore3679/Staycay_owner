@@ -3,17 +3,29 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 import 'data/repositories/firestore_registry_repository.dart';
+import 'data/repositories/account_profile_repository.dart';
 import 'data/repositories/guest_house_profile_repository.dart';
 import 'presentation/theme/app_colors.dart';
 import 'presentation/viewmodels/auth_view_model.dart';
 import 'presentation/viewmodels/registry_view_model.dart';
 import 'presentation/views/login_screen.dart';
-import 'presentation/views/Profile_screen.dart';
+import 'presentation/views/account_profile_screen.dart';
 import 'presentation/views/registry_home_page.dart';
 import 'services/auth_service.dart';
 
 class GuestHouseRegistryApp extends StatefulWidget {
-  const GuestHouseRegistryApp({super.key});
+  const GuestHouseRegistryApp({
+    super.key,
+    this.registryViewModel,
+    this.authViewModel,
+    this.guestHouseProfileRepository,
+    this.accountProfileRepository,
+  });
+
+  final RegistryViewModel? registryViewModel;
+  final AuthViewModel? authViewModel;
+  final GuestHouseProfileRepository? guestHouseProfileRepository;
+  final AccountProfileRepository? accountProfileRepository;
 
   @override
   State<GuestHouseRegistryApp> createState() => _GuestHouseRegistryAppState();
@@ -23,22 +35,29 @@ class _GuestHouseRegistryAppState extends State<GuestHouseRegistryApp> {
   String _guestHouseName = 'Guest House Registry';
   String _guestHouseAddress = '';
   Uint8List? _guestHousePhotoBytes;
-  bool _isProfileCompleted = false;
   bool _isProfileLoading = false;
+  bool _needsAccountSetup = false;
+  String? _profileLoadError;
+  Stream<AccountProfile?>? _accountProfileStream;
 
   late final RegistryViewModel _registryViewModel;
   late final AuthViewModel _authViewModel;
   late final GuestHouseProfileRepository _guestHouseProfileRepository;
+  late final AccountProfileRepository _accountProfileRepository;
   int _profileLoadToken = 0;
 
   @override
   void initState() {
     super.initState();
-    _registryViewModel = RegistryViewModel(
-      repository: FirestoreRegistryRepository(),
-    );
-    _guestHouseProfileRepository = GuestHouseProfileRepository();
-    _authViewModel = AuthViewModel(authService: AuthService());
+    _registryViewModel =
+        widget.registryViewModel ??
+        RegistryViewModel(repository: FirestoreRegistryRepository());
+    _guestHouseProfileRepository =
+        widget.guestHouseProfileRepository ?? GuestHouseProfileRepository();
+    _accountProfileRepository =
+        widget.accountProfileRepository ?? FirestoreAccountProfileRepository();
+    _authViewModel =
+        widget.authViewModel ?? AuthViewModel(authService: AuthService());
     _authViewModel.startListening(
       onUserChanged: (_) {
         _registryViewModel.loadData();
@@ -53,8 +72,10 @@ class _GuestHouseRegistryAppState extends State<GuestHouseRegistryApp> {
       _guestHouseName = 'Guest House Registry';
       _guestHouseAddress = '';
       _guestHousePhotoBytes = null;
-      _isProfileCompleted = false;
       _isProfileLoading = false;
+      _needsAccountSetup = false;
+      _profileLoadError = null;
+      _accountProfileStream = null;
       _profileLoadToken++;
     });
   }
@@ -68,12 +89,16 @@ class _GuestHouseRegistryAppState extends State<GuestHouseRegistryApp> {
 
     setState(() {
       _isProfileLoading = true;
+      _profileLoadError = null;
     });
 
     try {
       final profile = await _guestHouseProfileRepository.loadProfile(
         uid: user.uid,
       );
+      final accountProfile = profile == null
+          ? await _accountProfileRepository.watchProfile(user.uid).first
+          : null;
 
       if (!mounted || loadToken != _profileLoadToken) return;
 
@@ -82,24 +107,21 @@ class _GuestHouseRegistryAppState extends State<GuestHouseRegistryApp> {
           _guestHouseName = 'Guest House Registry';
           _guestHouseAddress = '';
           _guestHousePhotoBytes = null;
-          _isProfileCompleted = false;
         } else {
           _guestHouseName = profile.name;
           _guestHouseAddress = profile.address;
           _guestHousePhotoBytes = profile.photoBytes;
-          _isProfileCompleted = true;
         }
+        _needsAccountSetup = profile == null && accountProfile == null;
+        _accountProfileStream = _accountProfileRepository.watchProfile(user.uid);
 
         _isProfileLoading = false;
       });
-    } catch (_) {
+    } catch (e) {
       if (!mounted || loadToken != _profileLoadToken) return;
 
       setState(() {
-        _guestHouseName = 'Guest House Registry';
-        _guestHouseAddress = '';
-        _guestHousePhotoBytes = null;
-        _isProfileCompleted = false;
+        _profileLoadError = 'Unable to load guest house details: $e';
         _isProfileLoading = false;
       });
     }
@@ -107,8 +129,8 @@ class _GuestHouseRegistryAppState extends State<GuestHouseRegistryApp> {
 
   @override
   void dispose() {
-    _authViewModel.dispose();
-    _registryViewModel.dispose();
+    if (widget.authViewModel == null) _authViewModel.dispose();
+    if (widget.registryViewModel == null) _registryViewModel.dispose();
     super.dispose();
   }
 
@@ -118,22 +140,21 @@ class _GuestHouseRegistryAppState extends State<GuestHouseRegistryApp> {
       title: _guestHouseName,
       debugShowCheckedModeBanner: false,
       locale: const Locale('en', 'US'),
-      supportedLocales: const [
-        Locale('en', 'US'),
-      ],
+      supportedLocales: const [Locale('en', 'US')],
       theme: ThemeData(
         useMaterial3: true,
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: AppColors.brandPrimary,
-          brightness: Brightness.light,
-        ).copyWith(
-          primary: AppColors.brandPrimary,
-          onPrimary: Colors.white,
-          secondary: AppColors.revenueDark,
-          surface: Colors.white,
-          onSurface: AppColors.textStrong,
-          onSurfaceVariant: const Color(0xFF64748B),
-        ),
+        colorScheme:
+            ColorScheme.fromSeed(
+              seedColor: AppColors.brandPrimary,
+              brightness: Brightness.light,
+            ).copyWith(
+              primary: AppColors.brandPrimary,
+              onPrimary: Colors.white,
+              secondary: AppColors.revenueDark,
+              surface: Colors.white,
+              onSurface: AppColors.textStrong,
+              onSurfaceVariant: const Color(0xFF64748B),
+            ),
         scaffoldBackgroundColor: AppColors.appBackground,
         appBarTheme: const AppBarTheme(
           backgroundColor: Colors.white,
@@ -197,68 +218,101 @@ class _GuestHouseRegistryAppState extends State<GuestHouseRegistryApp> {
             );
           }
 
-          if (!_isProfileCompleted) {
-            return ProfileScreen(
-              initialName: _guestHouseName == 'Guest House Registry'
-                  ? ''
-                  : _guestHouseName,
-              initialAddress: _guestHouseAddress,
-              initialPhotoBytes: _guestHousePhotoBytes,
-              onContinue: ({
-                required String name,
-                required String address,
-                required Uint8List photoBytes,
-              }) async {
-                final currentUser = _authViewModel.user;
-                if (currentUser == null) return;
-
-                await _guestHouseProfileRepository.saveProfile(
-                  uid: currentUser.uid,
-                  name: name,
-                  address: address,
-                  photoBytes: photoBytes,
-                  email: currentUser.email,
-                );
-
-                if (!mounted) return;
-                setState(() {
-                  _guestHouseName = name;
-                  _guestHouseAddress = address;
-                  _guestHousePhotoBytes = photoBytes;
-                  _isProfileCompleted = true;
-                });
-              },
+          if (_profileLoadError != null) {
+            return Scaffold(
+              body: Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Text(_profileLoadError!, textAlign: TextAlign.center),
+                      const SizedBox(height: 16),
+                      FilledButton(
+                        onPressed: _loadGuestHouseProfile,
+                        child: const Text('Retry'),
+                      ),
+                      TextButton(
+                        onPressed: () async {
+                          try {
+                            await _authViewModel.signOut();
+                          } catch (e) {
+                            if (!context.mounted) return;
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text('Sign-out failed: $e')),
+                            );
+                          }
+                        },
+                        child: const Text('Sign out'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             );
           }
 
-          return RegistryHomePage(
-            guestHouseName: _guestHouseName,
-            guestHouseAddress: _guestHouseAddress,
-            guestHousePhotoBytes: _guestHousePhotoBytes,
-            onGuestHouseNameChanged: (value) async {
-              final currentUser = _authViewModel.user;
-              if (currentUser == null) return;
+          if (_needsAccountSetup) {
+            return AccountProfileScreen(
+              user: user,
+              repository: _accountProfileRepository,
+              authViewModel: _authViewModel,
+              onboarding: true,
+              onComplete: () => setState(() => _needsAccountSetup = false),
+            );
+          }
 
-              final currentPhotoBytes = _guestHousePhotoBytes;
-              if (currentPhotoBytes == null) {
-                throw StateError('Guest house photo is missing.');
+          return StreamBuilder<AccountProfile?>(
+            key: ValueKey(user.uid),
+            stream: _accountProfileStream,
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Scaffold(body: Center(child: CircularProgressIndicator()));
               }
-
-              await _guestHouseProfileRepository.saveProfile(
-                uid: currentUser.uid,
-                name: value,
-                address: _guestHouseAddress,
-                photoBytes: currentPhotoBytes,
-                email: currentUser.email,
+              if (snapshot.hasError) {
+                return Scaffold(
+                  body: Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(24),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('Unable to load account profile: ${snapshot.error}', textAlign: TextAlign.center),
+                          const SizedBox(height: 16),
+                          FilledButton(
+                            onPressed: _loadGuestHouseProfile,
+                            child: const Text('Retry'),
+                          ),
+                          TextButton(
+                            onPressed: () async {
+                              try {
+                                await _authViewModel.signOut();
+                              } catch (e) {
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(content: Text('Sign-out failed: $e')),
+                                );
+                              }
+                            },
+                            child: const Text('Sign out'),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                );
+              }
+              final name = snapshot.data?.guestHouseName.trim() ?? '';
+              return RegistryHomePage(
+                guestHouseName: name.isEmpty ? _guestHouseName : name,
+                guestHouseAddress:
+                    snapshot.data?.guestHouseAddress ?? _guestHouseAddress,
+                guestHousePhotoBytes: _guestHousePhotoBytes,
+                registryViewModel: _registryViewModel,
+                authViewModel: _authViewModel,
+                accountProfileRepository: _accountProfileRepository,
               );
-
-              if (!mounted) return;
-              setState(() {
-                _guestHouseName = value;
-              });
             },
-            registryViewModel: _registryViewModel,
-            authViewModel: _authViewModel,
           );
         },
       ),

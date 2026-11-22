@@ -1,6 +1,7 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:heavenrock_registry/data/repositories/account_profile_repository.dart';
 import 'package:heavenrock_registry/data/repositories/registry_repository.dart';
 import 'package:heavenrock_registry/domain/models/booking.dart';
 import 'package:heavenrock_registry/domain/models/expense.dart';
@@ -21,6 +22,16 @@ class _Repository implements RegistryRepository {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _AccountRepository implements AccountProfileRepository {
+  @override
+  Future<void> createProfileIfAbsent(String uid, AccountProfile profile) async {}
+  @override
+  Stream<AccountProfile?> watchProfile(String uid) => Stream.value(null);
+
+  @override
+  Future<void> saveProfile(String uid, AccountProfile profile) async {}
 }
 
 class _AuthService implements AuthService {
@@ -109,9 +120,9 @@ void main() {
           guestHouseName: 'Test house',
           guestHouseAddress: 'Test address',
           guestHousePhotoBytes: null,
-          onGuestHouseNameChanged: (_) async {},
           registryViewModel: controller,
           authViewModel: auth,
+          accountProfileRepository: _AccountRepository(),
         ),
       ),
     );

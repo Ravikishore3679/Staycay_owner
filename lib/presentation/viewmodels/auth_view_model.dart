@@ -87,6 +87,12 @@ class AuthViewModel extends ChangeNotifier {
     );
   }
 
+  void clearError() {
+    if (_errorMessage == null) return;
+    _errorMessage = null;
+    notifyListeners();
+  }
+
   Future<void> sendSmsCode(String phoneNumber) async {
     await _runAuthAction(() async {
       _clearPhoneState(notify: false);

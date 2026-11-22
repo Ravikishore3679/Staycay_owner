@@ -85,6 +85,21 @@ service cloud.firestore {
           (!('updatedAt' in data) || data.updatedAt is timestamp);
     }
 
+    function isValidAccountProfile(data) {
+      return data.keys().hasOnly(['name', 'phone', 'email', 'guestHouseName', 'guestHouseAddress', 'photoBytes', 'updatedAt']) &&
+          data.keys().hasAll(['name', 'phone', 'email', 'photoBytes', 'updatedAt']) &&
+          data.name is string && data.name.size() >= 1 && data.name.size() <= 80 &&
+          data.phone is string && data.phone.size() <= 30 &&
+          data.email is string && data.email.size() <= 254 &&
+          (!('guestHouseName' in data) ||
+            (data.guestHouseName is string && data.guestHouseName.size() <= 80)) &&
+          (!('guestHouseAddress' in data) ||
+            (data.guestHouseAddress is string && data.guestHouseAddress.size() <= 250)) &&
+          (data.photoBytes == null ||
+            (data.photoBytes is bytes && data.photoBytes.size() <= 500000)) &&
+          data.updatedAt is timestamp;
+    }
+
     // User bookings
     match /users/{userId}/bookings/{bookingId} {
       allow read: if isSignedIn() && request.auth.uid == userId;
@@ -110,6 +125,12 @@ service cloud.firestore {
       allow read: if isSignedIn() && request.auth.uid == userId;
       allow create, update: if isSignedIn() && request.auth.uid == userId && isValidProfile(request.resource.data);
       allow delete: if isSignedIn() && request.auth.uid == userId;
+    }
+
+    match /users/{userId}/account/{document} {
+      allow read: if isSignedIn() && request.auth.uid == userId && document == 'profile';
+      allow create, update: if isSignedIn() && request.auth.uid == userId &&
+          document == 'profile' && isValidAccountProfile(request.resource.data);
     }
 
     match /{document=**} {
