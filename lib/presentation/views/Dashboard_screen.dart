@@ -346,8 +346,9 @@ class _DashboardScreenState extends State<DashboardScreen>
                                 ],
                               ),
                             );
-                            if (confirmed != true || !dialogContext.mounted)
+                            if (confirmed != true || !dialogContext.mounted) {
                               return;
+                            }
                             setDialogState(() {
                               saving = true;
                               actionError = null;
