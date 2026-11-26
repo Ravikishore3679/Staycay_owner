@@ -32,6 +32,13 @@ class FirestoreRegistryRepository implements RegistryRepository {
           .collection('settings')
           .doc('houseRules');
 
+  DocumentReference<Map<String, dynamic>> _websiteDocument(String uid) =>
+      _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('settings')
+          .doc('website');
+
   @override
   Stream<List<Booking>> watchBookings() {
     final uid = _currentUid();
@@ -185,5 +192,26 @@ class FirestoreRegistryRepository implements RegistryRepository {
       'body': houseRules,
       'updatedAt': FieldValue.serverTimestamp(),
     }, SetOptions(merge: true));
+  }
+
+  @override
+  Stream<String?> watchWebsiteUrl() {
+    final uid = _currentUid();
+    return _websiteDocument(uid).snapshots().map((snapshot) {
+      final data = snapshot.data();
+      if (data == null) return null;
+      final url = data['url'];
+      if (url is! String) {
+        throw const FormatException('The saved website address is invalid.');
+      }
+      return url;
+    });
+  }
+
+  @override
+  Future<void> saveWebsiteUrl(String websiteUrl) async {
+    await _websiteDocument(
+      _currentUid(),
+    ).set({'url': websiteUrl, 'updatedAt': FieldValue.serverTimestamp()});
   }
 }

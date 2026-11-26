@@ -13,4 +13,6 @@ abstract class RegistryRepository {
   Future<void> deleteExpense(String expenseId);
   Stream<String> watchHouseRules();
   Future<void> saveHouseRules(String houseRules);
+  Stream<String?> watchWebsiteUrl();
+  Future<void> saveWebsiteUrl(String websiteUrl);
 }

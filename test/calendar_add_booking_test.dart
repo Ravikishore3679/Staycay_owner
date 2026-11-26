@@ -1,5 +1,8 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:heavenrock_registry/data/repositories/account_profile_repository.dart';
 import 'package:heavenrock_registry/data/repositories/registry_repository.dart';
@@ -14,6 +17,9 @@ class _Repository implements RegistryRepository {
   Booking? added;
   Expense? addedExpense;
   String? savedHouseRules;
+  String? websiteUrl = 'https://heavenrock.netlify.app';
+  bool failWebsiteSave = false;
+  final _websiteChanges = StreamController<String?>.broadcast();
 
   @override
   Future<void> addBooking(Booking booking) async => added = booking;
@@ -24,6 +30,19 @@ class _Repository implements RegistryRepository {
   @override
   Future<void> saveHouseRules(String houseRules) async =>
       savedHouseRules = houseRules;
+
+  @override
+  Stream<String?> watchWebsiteUrl() async* {
+    yield websiteUrl;
+    yield* _websiteChanges.stream;
+  }
+
+  @override
+  Future<void> saveWebsiteUrl(String url) async {
+    if (failWebsiteSave) throw StateError('Save failed');
+    websiteUrl = url;
+    _websiteChanges.add(url);
+  }
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -119,6 +138,7 @@ void main() {
   tearDown(() {
     controller.dispose();
     auth.dispose();
+    repository._websiteChanges.close();
   });
 
   Future<void> pumpRegistry(WidgetTester tester) async {
@@ -144,6 +164,21 @@ void main() {
     await tester.ensureVisible(cell);
     await tester.pumpAndSettle();
     await tester.tap(cell);
+    await tester.pumpAndSettle();
+  }
+
+  Future<void> openWebsite(WidgetTester tester) async {
+    await tester.scrollUntilVisible(
+      find.text('Website'),
+      200,
+      scrollable: find
+          .descendant(
+            of: find.byType(ManageScreen),
+            matching: find.byType(Scrollable),
+          )
+          .first,
+    );
+    await tester.tap(find.text('Website'));
     await tester.pumpAndSettle();
   }
 
@@ -415,7 +450,7 @@ void main() {
     expect(find.text('No expenses this month.'), findsOneWidget);
   });
 
-  testWidgets('Manage lists house rules and website below expenses', (
+  testWidgets('Manage shows a bottom house rules link and website action', (
     tester,
   ) async {
     await pumpRegistry(tester);
@@ -425,20 +460,24 @@ void main() {
     await tester.scrollUntilVisible(
       find.text('Website'),
       200,
-      scrollable: find.descendant(
-        of: find.byType(ManageScreen),
-        matching: find.byType(Scrollable),
-      ).first,
+      scrollable: find
+          .descendant(
+            of: find.byType(ManageScreen),
+            matching: find.byType(Scrollable),
+          )
+          .first,
     );
     await tester.pumpAndSettle();
     expect(
       tester.getTopLeft(find.text('Show expenses')).dy,
-      lessThan(tester.getTopLeft(find.text('House rules')).dy),
-    );
-    expect(
-      tester.getTopLeft(find.text('House rules')).dy,
       lessThan(tester.getTopLeft(find.text('Website')).dy),
     );
+    expect(
+      tester.getBottomRight(find.widgetWithText(TextButton, 'House rules')).dy,
+      greaterThan(tester.getBottomRight(find.text('Website')).dy),
+    );
+    expect(find.widgetWithText(ListTile, 'House rules'), findsNothing);
+    expect(find.widgetWithText(TextButton, 'House rules'), findsOneWidget);
     expect(find.byType(TabBar), findsNothing);
 
     await tester.tap(find.text('House rules'));
@@ -452,10 +491,12 @@ void main() {
     await tester.scrollUntilVisible(
       find.byKey(const Key('saveHouseRules')),
       200,
-      scrollable: find.descendant(
-        of: find.byType(ManageScreen),
-        matching: find.byType(Scrollable),
-      ).first,
+      scrollable: find
+          .descendant(
+            of: find.byType(ManageScreen),
+            matching: find.byType(Scrollable),
+          )
+          .first,
     );
     await tester.tap(find.byKey(const Key('saveHouseRules')));
     await tester.pumpAndSettle();
@@ -473,13 +514,121 @@ void main() {
     );
     await tester.tap(find.text('Website'));
     await tester.pumpAndSettle();
-    expect(find.text('heavenrock.netlify.app'), findsOneWidget);
+    expect(find.text('https://heavenrock.netlify.app'), findsOneWidget);
     expect(find.byKey(const Key('openWebsite')), findsOneWidget);
     expect(find.byKey(const Key('copyWebsiteLink')), findsOneWidget);
     expect(find.byKey(const Key('shareWebsiteLink')), findsOneWidget);
     await tester.tap(find.byTooltip('Back to manage options'));
     await tester.pumpAndSettle();
     expect(find.text('Manage records'), findsOneWidget);
+  });
+
+  testWidgets('website can be changed, shared and reloaded', (tester) async {
+    String? copied;
+    String? shared;
+    String? launched;
+    const shareChannel = MethodChannel('dev.fluttercommunity.plus/share');
+    const launchChannel = MethodChannel('plugins.flutter.io/url_launcher');
+    final messenger =
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+    messenger.setMockMethodCallHandler(shareChannel, (call) async {
+      shared = (call.arguments as Map<dynamic, dynamic>)['text'] as String?;
+      return 'success';
+    });
+    messenger.setMockMethodCallHandler(launchChannel, (call) async {
+      launched = (call.arguments as Map<dynamic, dynamic>)['url'] as String?;
+      return true;
+    });
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+          if (call.method == 'Clipboard.setData') {
+            copied =
+                (call.arguments as Map<dynamic, dynamic>)['text'] as String?;
+          }
+          return null;
+        });
+    addTearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null);
+      messenger.setMockMethodCallHandler(shareChannel, null);
+      messenger.setMockMethodCallHandler(launchChannel, null);
+    });
+    await pumpRegistry(tester);
+    await tester.tap(find.text('Manage').last);
+    await tester.pumpAndSettle();
+    await openWebsite(tester);
+    await tester.tap(find.byKey(const Key('editWebsite')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('websiteAddress')),
+      'example-resort.com/stays',
+    );
+    await tester.tap(find.byKey(const Key('saveWebsite')));
+    await tester.pumpAndSettle();
+    expect(repository.websiteUrl, 'https://example-resort.com/stays');
+    expect(find.text('https://example-resort.com/stays'), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('copyWebsiteLink')));
+    await tester.pumpAndSettle();
+    expect(copied, 'https://example-resort.com/stays');
+    await tester.tap(find.byKey(const Key('openWebsite')));
+    await tester.pumpAndSettle();
+    expect(launched, 'https://example-resort.com/stays');
+    await tester.tap(find.byKey(const Key('shareWebsiteLink')));
+    await tester.pumpAndSettle();
+    expect(shared, 'https://example-resort.com/stays');
+
+    await tester.tap(find.byTooltip('Back to manage options'));
+    await tester.pumpAndSettle();
+    await openWebsite(tester);
+    expect(find.text('https://example-resort.com/stays'), findsOneWidget);
+    await tester.tap(find.byKey(const Key('editWebsite')));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byKey(const Key('websiteAddress')), '');
+    await tester.tap(find.byKey(const Key('saveWebsite')));
+    await tester.pumpAndSettle();
+    expect(repository.websiteUrl, '');
+    expect(find.text('No website added'), findsOneWidget);
+  });
+
+  testWidgets('website validates input and reports save failures', (
+    tester,
+  ) async {
+    repository.websiteUrl = null;
+    await pumpRegistry(tester);
+    await tester.tap(find.text('Manage').last);
+    await tester.pumpAndSettle();
+    await openWebsite(tester);
+    expect(find.text('No website added'), findsOneWidget);
+    expect(
+      tester
+          .widget<FilledButton>(find.byKey(const Key('openWebsite')))
+          .onPressed,
+      isNull,
+    );
+    await tester.tap(find.byKey(const Key('editWebsite')));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const Key('websiteAddress')),
+      'ftp://example.com',
+    );
+    await tester.tap(find.byKey(const Key('saveWebsite')));
+    await tester.pumpAndSettle();
+    expect(
+      find.text('Enter a valid HTTP or HTTPS website address'),
+      findsOneWidget,
+    );
+    expect(repository.websiteUrl, isNull);
+    await tester.enterText(
+      find.byKey(const Key('websiteAddress')),
+      'https://example.com',
+    );
+    repository.failWebsiteSave = true;
+    await tester.tap(find.byKey(const Key('saveWebsite')));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Unable to save website'), findsOneWidget);
+    expect(repository.websiteUrl, isNull);
+    expect(find.byKey(const Key('websiteAddress')), findsOneWidget);
   });
 
   testWidgets(

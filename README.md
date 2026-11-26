@@ -30,6 +30,15 @@ use the default guest-house header and no longer require guest-house setup. New 
 can save their account profile before Home or skip it and edit it later.
 Deploy the updated `firestore.rules` before using account profile storage.
 
+## Website
+
+Under **Manage > Website**, add or edit the website address for the signed-in
+account. The saved address can be opened, copied or shared. New accounts have
+no website until one is added; clear the address and save to remove it. Addresses
+without a scheme use HTTPS. The address is stored in
+`users/{uid}/settings/website`. Deploy the updated `firestore.rules` before
+releasing this feature.
+
 ## Booking balance payments
 
 Tap an empty date on the Home calendar to open a new booking with that date

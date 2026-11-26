@@ -77,93 +77,183 @@ class _ManageScreenState extends State<ManageScreen> {
           Expanded(
             child: selectedForm == 'houseRules'
                 ? _HouseRulesEditor(controller: widget.controller)
-                : const _WebsiteTab(),
+                : _WebsiteTab(controller: widget.controller),
           ),
         ],
       );
     }
 
-    return ListView(
-      padding: const EdgeInsets.all(20),
+    return Column(
       children: [
-        Text(
-          'Manage records',
-          style: Theme.of(
-            context,
-          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+        Expanded(
+          child: ListView(
+            padding: const EdgeInsets.all(20),
+            children: [
+              Text(
+                'Manage records',
+                style: Theme.of(context).textTheme.headlineSmall?.copyWith(
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Choose what you want to add or view.',
+                style: TextStyle(color: Color(0xFF64748B)),
+              ),
+              const SizedBox(height: 20),
+              _AddActionCard(
+                icon: Icons.bed_outlined,
+                title: 'Add booking',
+                subtitle: 'Guest, stay dates and payment',
+                onTap: () => setState(() => _selectedForm = 'booking'),
+              ),
+              _AddActionCard(
+                icon: Icons.receipt_long_outlined,
+                title: 'Add expense',
+                subtitle: 'Record a business expense',
+                onTap: () => setState(() => _selectedForm = 'expense'),
+              ),
+              _AddActionCard(
+                icon: Icons.list_alt_outlined,
+                title: 'Show expenses',
+                subtitle: 'All expenses of the current month',
+                onTap: () => setState(() => _selectedForm = 'showExpenses'),
+              ),
+              _AddActionCard(
+                icon: Icons.language_outlined,
+                title: 'Website',
+                subtitle: 'Open or share the website',
+                onTap: () => setState(() => _selectedForm = 'website'),
+              ),
+            ],
+          ),
         ),
-        const SizedBox(height: 6),
-        const Text(
-          'Choose what you want to add or view.',
-          style: TextStyle(color: Color(0xFF64748B)),
-        ),
-        const SizedBox(height: 20),
-        _AddActionCard(
-          icon: Icons.bed_outlined,
-          title: 'Add booking',
-          subtitle: 'Guest, stay dates and payment',
-          onTap: () => setState(() => _selectedForm = 'booking'),
-        ),
-        _AddActionCard(
-          icon: Icons.receipt_long_outlined,
-          title: 'Add expense',
-          subtitle: 'Record a business expense',
-          onTap: () => setState(() => _selectedForm = 'expense'),
-        ),
-        _AddActionCard(
-          icon: Icons.list_alt_outlined,
-          title: 'Show expenses',
-          subtitle: 'All expenses of the current month',
-          onTap: () => setState(() => _selectedForm = 'showExpenses'),
-        ),
-        _AddActionCard(
-          icon: Icons.rule_outlined,
-          title: 'House rules',
-          subtitle: 'Edit the rules shared with guests',
-          onTap: () => setState(() => _selectedForm = 'houseRules'),
-        ),
-        _AddActionCard(
-          icon: Icons.language_outlined,
-          title: 'Website',
-          subtitle: 'Open or share the website',
-          onTap: () => setState(() => _selectedForm = 'website'),
+        Align(
+          alignment: Alignment.centerRight,
+          child: Padding(
+            padding: const EdgeInsets.only(right: 12, bottom: 4),
+            child: TextButton(
+              onPressed: () => setState(() => _selectedForm = 'houseRules'),
+              child: const Text('House rules'),
+            ),
+          ),
         ),
       ],
     );
   }
 }
 
-class _WebsiteTab extends StatelessWidget {
-  const _WebsiteTab();
+class _WebsiteTab extends StatefulWidget {
+  const _WebsiteTab({required this.controller});
 
-  static const String _websiteUrl = 'https://heavenrock.netlify.app';
-  static const String _displayUrl = 'heavenrock.netlify.app';
+  final RegistryViewModel controller;
 
-  Future<void> _openWebsite(BuildContext context) async {
-    final uri = Uri.parse(_websiteUrl);
-    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!opened && context.mounted) {
+  @override
+  State<_WebsiteTab> createState() => _WebsiteTabState();
+}
+
+class _WebsiteTabState extends State<_WebsiteTab> {
+  final _formKey = GlobalKey<FormState>();
+  final _address = TextEditingController();
+  late Stream<String?> _websiteStream;
+  bool _editing = false;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _websiteStream = _watchWebsite();
+  }
+
+  Stream<String?> _watchWebsite() async* {
+    yield* widget.controller.repository.watchWebsiteUrl();
+  }
+
+  @override
+  void dispose() {
+    _address.dispose();
+    super.dispose();
+  }
+
+  Uri? _parseAddress(String value) {
+    final trimmed = value.trim();
+    if (trimmed.isEmpty || RegExp(r'\s').hasMatch(trimmed)) return null;
+    final withScheme = trimmed.contains('://') ? trimmed : 'https://$trimmed';
+    final uri = Uri.tryParse(withScheme);
+    if (uri == null ||
+        (uri.scheme != 'http' && uri.scheme != 'https') ||
+        uri.host.isEmpty ||
+        uri.userInfo.isNotEmpty ||
+        uri.host.contains(':') ||
+        withScheme.length > 2048) {
+      return null;
+    }
+    return uri;
+  }
+
+  Future<void> _save() async {
+    if (!_formKey.currentState!.validate()) return;
+    final value = _address.text.trim();
+    final url = value.isEmpty ? '' : _parseAddress(value)!.toString();
+    setState(() => _saving = true);
+    try {
+      await widget.controller.repository.saveWebsiteUrl(url);
+      if (!mounted) return;
+      setState(() => _editing = false);
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Website saved')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Unable to save website: $e')));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  Future<void> _openWebsite(String url) async {
+    try {
+      final uri = _parseAddress(url);
+      if (uri == null ||
+          !await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+        throw StateError('Invalid or unavailable website address.');
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Unable to open the website: $e')));
+    }
+  }
+
+  Future<void> _copyLink(String url) async {
+    try {
+      await Clipboard.setData(ClipboardData(text: url));
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Website link copied')));
+    } catch (e) {
+      if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Unable to open the website')),
+        SnackBar(content: Text('Unable to copy the website link: $e')),
       );
     }
   }
 
-  Future<void> _copyLink(BuildContext context) async {
-    await Clipboard.setData(const ClipboardData(text: _websiteUrl));
-    if (!context.mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('Website link copied')));
-  }
-
-  Future<void> _shareLink() async {
-    await SharePlus.instance.share(
-      ShareParams(
-        text: 'Visit Heaven Rock: https://heavenrock.netlify.app',
-        subject: 'Heaven Rock website',
-      ),
-    );
+  Future<void> _shareLink(String url, Rect origin) async {
+    try {
+      await SharePlus.instance.share(
+        ShareParams(text: url, sharePositionOrigin: origin),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Unable to share the website: $e')),
+      );
+    }
   }
 
   @override
@@ -181,67 +271,163 @@ class _WebsiteTab extends StatelessWidget {
           ),
           const SizedBox(height: 6),
           const Text(
-            'Open or share the Heaven Rock resort website.',
+            'Add, open or share your website.',
             style: TextStyle(color: Color(0xFF64748B)),
           ),
           const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Row(
+          StreamBuilder<String?>(
+            stream: _websiteStream,
+            builder: (context, snapshot) {
+              if (snapshot.hasError) {
+                return Column(
+                  children: [
+                    Text('Unable to load website: ${snapshot.error}'),
+                    TextButton(
+                      onPressed: () => setState(() {
+                        _websiteStream = _watchWebsite();
+                      }),
+                      child: const Text('Retry'),
+                    ),
+                  ],
+                );
+              }
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
+              }
+              final url = snapshot.data ?? '';
+              return Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      CircleAvatar(child: Icon(Icons.language_outlined)),
-                      SizedBox(width: 12),
-                      Expanded(
-                        child: Text(
-                          _displayUrl,
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w700,
-                            color: AppColors.brandPrimary,
+                      Row(
+                        children: [
+                          const CircleAvatar(
+                            child: Icon(Icons.language_outlined),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              url.isEmpty ? 'No website added' : url,
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.brandPrimary,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+                      if (_editing) ...[
+                        Form(
+                          key: _formKey,
+                          child: TextFormField(
+                            key: const Key('websiteAddress'),
+                            controller: _address,
+                            keyboardType: TextInputType.url,
+                            decoration: const InputDecoration(
+                              labelText: 'Website address',
+                              hintText: 'example.com',
+                              helperText: 'Leave empty to remove your website.',
+                            ),
+                            validator: (value) {
+                              final text = value?.trim() ?? '';
+                              if (text.isNotEmpty &&
+                                  _parseAddress(text) == null) {
+                                return 'Enter a valid HTTP or HTTPS website address';
+                              }
+                              return null;
+                            },
                           ),
                         ),
-                      ),
+                        const SizedBox(height: 12),
+                        Row(
+                          children: [
+                            TextButton(
+                              onPressed: _saving
+                                  ? null
+                                  : () => setState(() => _editing = false),
+                              child: const Text('Cancel'),
+                            ),
+                            const SizedBox(width: 8),
+                            FilledButton(
+                              key: const Key('saveWebsite'),
+                              onPressed: _saving ? null : _save,
+                              child: Text(
+                                _saving ? 'Saving...' : 'Save website',
+                              ),
+                            ),
+                          ],
+                        ),
+                      ] else ...[
+                        OutlinedButton.icon(
+                          key: const Key('editWebsite'),
+                          onPressed: () => setState(() {
+                            _address.text = url;
+                            _editing = true;
+                          }),
+                          icon: const Icon(Icons.edit_outlined),
+                          label: Text(
+                            url.isEmpty ? 'Add website' : 'Edit website',
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          child: FilledButton.icon(
+                            key: const Key('openWebsite'),
+                            onPressed: url.isEmpty
+                                ? null
+                                : () => _openWebsite(url),
+                            icon: const Icon(Icons.open_in_new),
+                            label: const Text('Open website'),
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: OutlinedButton.icon(
+                                key: const Key('copyWebsiteLink'),
+                                onPressed: url.isEmpty
+                                    ? null
+                                    : () => _copyLink(url),
+                                icon: const Icon(Icons.copy_outlined),
+                                label: const Text('Copy link'),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Builder(
+                                builder: (buttonContext) => OutlinedButton.icon(
+                                  key: const Key('shareWebsiteLink'),
+                                  onPressed: url.isEmpty
+                                      ? null
+                                      : () {
+                                          final box =
+                                              buttonContext.findRenderObject()!
+                                                  as RenderBox;
+                                          _shareLink(
+                                            url,
+                                            box.localToGlobal(Offset.zero) &
+                                                box.size,
+                                          );
+                                        },
+                                  icon: const Icon(Icons.share_outlined),
+                                  label: const Text('Share'),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
                     ],
                   ),
-                  const SizedBox(height: 16),
-                  SizedBox(
-                    width: double.infinity,
-                    child: FilledButton.icon(
-                      key: const Key('openWebsite'),
-                      onPressed: () => _openWebsite(context),
-                      icon: const Icon(Icons.open_in_new),
-                      label: const Text('Open website'),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          key: const Key('copyWebsiteLink'),
-                          onPressed: () => _copyLink(context),
-                          icon: const Icon(Icons.copy_outlined),
-                          label: const Text('Copy link'),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: OutlinedButton.icon(
-                          key: const Key('shareWebsiteLink'),
-                          onPressed: _shareLink,
-                          icon: const Icon(Icons.share_outlined),
-                          label: const Text('Share'),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
+                ),
+              );
+            },
           ),
         ],
       ),

@@ -138,12 +138,18 @@ service cloud.firestore {
     match /users/{userId}/settings/{document} {
       allow read: if isSignedIn() && request.auth.uid == userId;
       allow create, update: if isSignedIn() && request.auth.uid == userId &&
-          document == 'houseRules' &&
-          request.resource.data.keys().hasOnly(['body', 'updatedAt']) &&
-          request.resource.data.body is string &&
-          request.resource.data.body.size() <= 50000 &&
-          (!('updatedAt' in request.resource.data) ||
-            request.resource.data.updatedAt is timestamp);
+          ((document == 'houseRules' &&
+            request.resource.data.keys().hasOnly(['body', 'updatedAt']) &&
+            request.resource.data.body is string &&
+            request.resource.data.body.size() <= 50000 &&
+            (!('updatedAt' in request.resource.data) ||
+              request.resource.data.updatedAt is timestamp)) ||
+           (document == 'website' &&
+            request.resource.data.keys().hasOnly(['url', 'updatedAt']) &&
+            request.resource.data.keys().hasAll(['url', 'updatedAt']) &&
+            request.resource.data.url is string &&
+            request.resource.data.url.size() <= 2048 &&
+            request.resource.data.updatedAt is timestamp));
     }
 
     match /{document=**} {
