@@ -13,12 +13,17 @@ import 'package:heavenrock_registry/services/auth_service.dart';
 class _Repository implements RegistryRepository {
   Booking? added;
   Expense? addedExpense;
+  String? savedHouseRules;
 
   @override
   Future<void> addBooking(Booking booking) async => added = booking;
 
   @override
   Future<void> addExpense(Expense expense) async => addedExpense = expense;
+
+  @override
+  Future<void> saveHouseRules(String houseRules) async =>
+      savedHouseRules = houseRules;
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
@@ -408,6 +413,73 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Expenses this month'), findsOneWidget);
     expect(find.text('No expenses this month.'), findsOneWidget);
+  });
+
+  testWidgets('Manage lists house rules and website below expenses', (
+    tester,
+  ) async {
+    await pumpRegistry(tester);
+    await tester.tap(find.text('Manage').last);
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('Website'),
+      200,
+      scrollable: find.descendant(
+        of: find.byType(ManageScreen),
+        matching: find.byType(Scrollable),
+      ).first,
+    );
+    await tester.pumpAndSettle();
+    expect(
+      tester.getTopLeft(find.text('Show expenses')).dy,
+      lessThan(tester.getTopLeft(find.text('House rules')).dy),
+    );
+    expect(
+      tester.getTopLeft(find.text('House rules')).dy,
+      lessThan(tester.getTopLeft(find.text('Website')).dy),
+    );
+    expect(find.byType(TabBar), findsNothing);
+
+    await tester.tap(find.text('House rules'));
+    await tester.pumpAndSettle();
+    expect(find.byKey(const Key('houseRulesBody')), findsOneWidget);
+    await tester.enterText(
+      find.byKey(const Key('houseRulesBody')),
+      'Check in at 2 PM',
+    );
+    tester.testTextInput.hide();
+    await tester.scrollUntilVisible(
+      find.byKey(const Key('saveHouseRules')),
+      200,
+      scrollable: find.descendant(
+        of: find.byType(ManageScreen),
+        matching: find.byType(Scrollable),
+      ).first,
+    );
+    await tester.tap(find.byKey(const Key('saveHouseRules')));
+    await tester.pumpAndSettle();
+    expect(repository.savedHouseRules, 'Check in at 2 PM');
+
+    await tester.tap(find.byTooltip('Back to manage options'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Website'),
+      200,
+      scrollable: find.descendant(
+        of: find.byType(ManageScreen),
+        matching: find.byType(Scrollable),
+      ),
+    );
+    await tester.tap(find.text('Website'));
+    await tester.pumpAndSettle();
+    expect(find.text('heavenrock.netlify.app'), findsOneWidget);
+    expect(find.byKey(const Key('openWebsite')), findsOneWidget);
+    expect(find.byKey(const Key('copyWebsiteLink')), findsOneWidget);
+    expect(find.byKey(const Key('shareWebsiteLink')), findsOneWidget);
+    await tester.tap(find.byTooltip('Back to manage options'));
+    await tester.pumpAndSettle();
+    expect(find.text('Manage records'), findsOneWidget);
   });
 
   testWidgets(

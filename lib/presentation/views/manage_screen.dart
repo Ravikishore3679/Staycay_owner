@@ -67,60 +67,180 @@ class _ManageScreenState extends State<ManageScreen> {
       );
     }
 
-    return DefaultTabController(
-      length: 2,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
+    if (selectedForm == 'houseRules' || selectedForm == 'website') {
+      return Column(
         children: [
-          const TabBar(
-            tabs: [
-              Tab(
-                text: 'Manage',
-                icon: Icon(Icons.dashboard_customize_outlined),
-              ),
-              Tab(text: 'House rules', icon: Icon(Icons.rule_outlined)),
-            ],
+          _AddFormHeader(
+            title: selectedForm == 'houseRules' ? 'House rules' : 'Website',
+            onBack: () => setState(() => _selectedForm = null),
           ),
           Expanded(
-            child: TabBarView(
-              children: [
-                ListView(
-                  padding: const EdgeInsets.all(20),
-                  children: [
-                    Text(
-                      'Manage records',
-                      style: Theme.of(context).textTheme.headlineSmall
-                          ?.copyWith(fontWeight: FontWeight.w700),
+            child: selectedForm == 'houseRules'
+                ? _HouseRulesEditor(controller: widget.controller)
+                : const _WebsiteTab(),
+          ),
+        ],
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(20),
+      children: [
+        Text(
+          'Manage records',
+          style: Theme.of(
+            context,
+          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          'Choose what you want to add or view.',
+          style: TextStyle(color: Color(0xFF64748B)),
+        ),
+        const SizedBox(height: 20),
+        _AddActionCard(
+          icon: Icons.bed_outlined,
+          title: 'Add booking',
+          subtitle: 'Guest, stay dates and payment',
+          onTap: () => setState(() => _selectedForm = 'booking'),
+        ),
+        _AddActionCard(
+          icon: Icons.receipt_long_outlined,
+          title: 'Add expense',
+          subtitle: 'Record a business expense',
+          onTap: () => setState(() => _selectedForm = 'expense'),
+        ),
+        _AddActionCard(
+          icon: Icons.list_alt_outlined,
+          title: 'Show expenses',
+          subtitle: 'All expenses of the current month',
+          onTap: () => setState(() => _selectedForm = 'showExpenses'),
+        ),
+        _AddActionCard(
+          icon: Icons.rule_outlined,
+          title: 'House rules',
+          subtitle: 'Edit the rules shared with guests',
+          onTap: () => setState(() => _selectedForm = 'houseRules'),
+        ),
+        _AddActionCard(
+          icon: Icons.language_outlined,
+          title: 'Website',
+          subtitle: 'Open or share the website',
+          onTap: () => setState(() => _selectedForm = 'website'),
+        ),
+      ],
+    );
+  }
+}
+
+class _WebsiteTab extends StatelessWidget {
+  const _WebsiteTab();
+
+  static const String _websiteUrl = 'https://heavenrock.netlify.app';
+  static const String _displayUrl = 'heavenrock.netlify.app';
+
+  Future<void> _openWebsite(BuildContext context) async {
+    final uri = Uri.parse(_websiteUrl);
+    final opened = await launchUrl(uri, mode: LaunchMode.externalApplication);
+    if (!opened && context.mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Unable to open the website')),
+      );
+    }
+  }
+
+  Future<void> _copyLink(BuildContext context) async {
+    await Clipboard.setData(const ClipboardData(text: _websiteUrl));
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Website link copied')));
+  }
+
+  Future<void> _shareLink() async {
+    await SharePlus.instance.share(
+      ShareParams(
+        text: 'Visit Heaven Rock: https://heavenrock.netlify.app',
+        subject: 'Heaven Rock website',
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      color: AppColors.appBackground,
+      child: ListView(
+        padding: const EdgeInsets.all(16),
+        children: [
+          Text(
+            'Website',
+            style: Theme.of(
+              context,
+            ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+          ),
+          const SizedBox(height: 6),
+          const Text(
+            'Open or share the Heaven Rock resort website.',
+            style: TextStyle(color: Color(0xFF64748B)),
+          ),
+          const SizedBox(height: 16),
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Row(
+                    children: [
+                      CircleAvatar(child: Icon(Icons.language_outlined)),
+                      SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _displayUrl,
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.brandPrimary,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      key: const Key('openWebsite'),
+                      onPressed: () => _openWebsite(context),
+                      icon: const Icon(Icons.open_in_new),
+                      label: const Text('Open website'),
                     ),
-                    const SizedBox(height: 6),
-                    const Text(
-                      'Choose what you want to add or view.',
-                      style: TextStyle(color: Color(0xFF64748B)),
-                    ),
-                    const SizedBox(height: 20),
-                    _AddActionCard(
-                      icon: Icons.bed_outlined,
-                      title: 'Add booking',
-                      subtitle: 'Guest, stay dates and payment',
-                      onTap: () => setState(() => _selectedForm = 'booking'),
-                    ),
-                    _AddActionCard(
-                      icon: Icons.receipt_long_outlined,
-                      title: 'Add expense',
-                      subtitle: 'Record a business expense',
-                      onTap: () => setState(() => _selectedForm = 'expense'),
-                    ),
-                    _AddActionCard(
-                      icon: Icons.list_alt_outlined,
-                      title: 'Show expenses',
-                      subtitle: 'All expenses of the current month',
-                      onTap: () =>
-                          setState(() => _selectedForm = 'showExpenses'),
-                    ),
-                  ],
-                ),
-                _HouseRulesEditor(controller: widget.controller),
-              ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          key: const Key('copyWebsiteLink'),
+                          onPressed: () => _copyLink(context),
+                          icon: const Icon(Icons.copy_outlined),
+                          label: const Text('Copy link'),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          key: const Key('shareWebsiteLink'),
+                          onPressed: _shareLink,
+                          icon: const Icon(Icons.share_outlined),
+                          label: const Text('Share'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ],
