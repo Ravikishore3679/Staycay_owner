@@ -89,7 +89,11 @@ void main() {
   ) async {
     final now = DateTime.now();
     final date = DateTime(now.year, now.month, 10);
-    final otherMonth = DateTime(now.year, now.month == 12 ? 11 : now.month + 1, 10);
+    final otherMonth = DateTime(
+      now.year,
+      now.month == 12 ? 11 : now.month + 1,
+      10,
+    );
     final controller = _ReportViewModel(
       [
         _booking('Active Guest', date),
@@ -152,6 +156,10 @@ void main() {
       'Expenses (1)',
       'Cleaning Supplies',
       'Room supplies',
+      'Financial summary',
+      'ACTIVE BOOKINGS',
+      'GUESTS',
+      'OUTSTANDING BALANCE',
       'Refunded: Rs 1500.00 | Revenue: Rs 0.00',
       'Refunded: Rs 0.00 | Revenue: Rs 1500.00',
       'Rs 3000.00',
@@ -171,14 +179,27 @@ void main() {
     await tester.tap(find.byType(DropdownButtonFormField<int>).first);
     await tester.pumpAndSettle();
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     await tester.tap(find.text(months[otherMonth.month - 1]).last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('Export monthly P&L'));
     await tester.pumpAndSettle();
-    expect(filename, 'monthly_pl_${now.year}_${otherMonth.month.toString().padLeft(2, '0')}.pdf');
+    expect(
+      filename,
+      'monthly_pl_${now.year}_${otherMonth.month.toString().padLeft(2, '0')}.pdf',
+    );
     final otherContent = _pdfContents(shared!);
     expect(otherContent, contains('Other Month Guest'));
     expect(otherContent, contains('Other Month Expense'));
@@ -197,6 +218,64 @@ void main() {
     expect(content, contains('No cancelled bookings this month.'));
     expect(content, contains('No expenses this month.'));
   });
+
+  test('exports each short expense as a single line', () async {
+    final date = DateTime(2026, 1, 10);
+    final bytes = await buildMonthlyReportPdf(
+      report: MonthlyReport(year: 2026, month: 1, revenue: 0, expenses: 15),
+      bookings: [],
+      expenses: [
+        Expense(
+          id: '1',
+          title: 'Cleaning',
+          amount: 10,
+          description: 'Room\nsupplies',
+          date: date,
+        ),
+        Expense(
+          id: '2',
+          title: 'Electricity',
+          amount: 5,
+          description: '',
+          date: date,
+        ),
+      ],
+    );
+    final content = _pdfContents(bytes);
+    expect(
+      content,
+      contains(
+        'Cleaning | 10 Jan 2026 | Rs 10.00 | Description: Room supplies',
+      ),
+    );
+    expect(content, contains('Electricity | 10 Jan 2026 | Rs 5.00'));
+  });
+
+  test(
+    'summarizes active bookings without counting cancelled guests or dues',
+    () async {
+      final date = DateTime(2026, 1, 10);
+      final bytes = await buildMonthlyReportPdf(
+        report: MonthlyReport(
+          year: 2026,
+          month: 1,
+          revenue: 1500,
+          expenses: 2000,
+        ),
+        bookings: [
+          _booking('Active Guest', date),
+          _booking('Cancelled Guest', date, cancelled: true, refund: 1500),
+        ],
+        expenses: [],
+      );
+      final content = _pdfContents(bytes);
+      expect(content, contains('ACTIVE BOOKINGS 1'));
+      expect(content, contains('GUESTS 2'));
+      expect(content, contains('OUTSTANDING BALANCE Rs 1500.00'));
+      expect(content, contains('Rs -500.00'));
+      expect(content, contains('Cancelled bookings (1)'));
+    },
+  );
 
   test('exports every record over multiple pages', () async {
     final date = DateTime(2026, 1, 10);
@@ -245,7 +324,7 @@ void main() {
             id: '1',
             title: 'Long expense',
             amount: 5,
-            description: List.filled(100, 'line').join('\n'),
+            description: List.filled(4000, 'line').join('\n'),
             date: date,
           ),
           Expense(
@@ -259,7 +338,7 @@ void main() {
       );
       final content = _pdfContents(bytes);
       expect(content, contains('Next expense'));
-      expect(RegExp(r'\bline\b').allMatches(content).length, 100);
+      expect(RegExp(r'\bline\b').allMatches(content).length, 4000);
     },
   );
 }
