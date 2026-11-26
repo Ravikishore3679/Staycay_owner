@@ -414,6 +414,7 @@ class _DashboardScreenState extends State<DashboardScreen>
                                           widget.guestHouseAddress,
                                       guestHousePhotoBytes:
                                           widget.guestHousePhotoBytes,
+                                      houseRules: widget.controller.houseRules,
                                     );
                                 await Printing.layoutPdf(
                                   name: 'Booking receipt ${latest.id}',

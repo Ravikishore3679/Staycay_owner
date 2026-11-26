@@ -13,12 +13,28 @@ class RegistryViewModel extends ChangeNotifier {
 
   final RegistryRepository repository;
 
+  static const String defaultHouseRules =
+      '''Please carry a valid government ID during the stay.
+Check-in time is from 1:00 PM onwards, and check-out time is before 11:00 AM.
+Check-out extensions are subject to room availability.
+Any damage to property will be chargeable to the guest.
+Loud music and disturbance are not allowed after 11:00 PM.
+Outstanding balance must be cleared before check-in.
+Please maintain cleanliness and hygiene in the rooms and living area.
+Pets are allowed in the guest house premises only upon prior notice.
+Smoking is strictly prohibited inside the rooms and common areas.
+Guests are responsible for their personal belongings; the guest house is not liable for any loss.
+Swimming pool discipline: Children must be supervised by an adult at all times. No diving or running around the pool area.
+Penalty for vomiting in the rooms will be 1000.''';
+
   List<Booking> _bookings = [];
   List<Expense> _expenses = [];
+  String _houseRules = defaultHouseRules;
   bool _isLoading = false;
   String? _errorMessage;
   StreamSubscription<List<Booking>>? _bookingsSub;
   StreamSubscription<List<Expense>>? _expensesSub;
+  StreamSubscription<String>? _houseRulesSub;
   Timer? _debounceTimer;
 
   // Cache for computed values
@@ -51,18 +67,25 @@ class RegistryViewModel extends ChangeNotifier {
     try {
       await _bookingsSub?.cancel();
       await _expensesSub?.cancel();
+      await _houseRulesSub?.cancel();
 
       final bookingsStream = repository.watchBookings();
       final expensesStream = repository.watchExpenses();
+      final houseRulesStream = repository.watchHouseRules();
 
       try {
         final initial = await Future.wait([
           bookingsStream.first,
           expensesStream.first,
+          houseRulesStream.first,
         ]);
 
         _bookings = initial[0] as List<Booking>;
         _expenses = initial[1] as List<Expense>;
+        final savedRules = initial[2] as String;
+        _houseRules = savedRules.trim().isEmpty
+            ? defaultHouseRules
+            : savedRules;
         _invalidateAllCaches();
       } catch (_) {
         _bookings = [];
@@ -96,6 +119,20 @@ class RegistryViewModel extends ChangeNotifier {
         },
         onError: (Object e) {
           _errorMessage = _formatError(e, prefix: 'Expenses sync failed');
+          notifyListeners();
+        },
+      );
+
+      _houseRulesSub = houseRulesStream.listen(
+        (rules) {
+          _debounceUpdate(() {
+            _houseRules = rules.trim().isEmpty ? defaultHouseRules : rules;
+            _errorMessage = null;
+            notifyListeners();
+          });
+        },
+        onError: (Object e) {
+          _errorMessage = _formatError(e, prefix: 'House rules sync failed');
           notifyListeners();
         },
       );
@@ -135,6 +172,8 @@ class RegistryViewModel extends ChangeNotifier {
       ..sort((a, b) => b.date.compareTo(a.date)));
     return _cachedSortedExpenses!;
   }
+
+  String get houseRules => _houseRules;
 
   List<Booking> get topUpcomingBookings {
     if (_cachedUpcomingBookings != null) {
@@ -290,10 +329,24 @@ class RegistryViewModel extends ChangeNotifier {
     }
   }
 
+  Future<void> saveHouseRules(String houseRules) async {
+    try {
+      await repository.saveHouseRules(houseRules.trim());
+      _houseRules = houseRules.trim();
+      _errorMessage = null;
+      notifyListeners();
+    } catch (e) {
+      _errorMessage = _formatError(e, prefix: 'Failed to save house rules');
+      notifyListeners();
+      rethrow;
+    }
+  }
+
   @override
   void dispose() {
     _bookingsSub?.cancel();
     _expensesSub?.cancel();
+    _houseRulesSub?.cancel();
     _debounceTimer?.cancel();
     super.dispose();
   }

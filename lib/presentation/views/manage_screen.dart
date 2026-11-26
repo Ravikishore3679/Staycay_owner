@@ -67,40 +67,185 @@ class _ManageScreenState extends State<ManageScreen> {
       );
     }
 
-    return ListView(
-      padding: const EdgeInsets.all(20),
-      children: [
-        Text(
-          'Manage records',
-          style: Theme.of(
-            context,
-          ).textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.w700),
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          'Choose what you want to add or view.',
-          style: TextStyle(color: Color(0xFF64748B)),
-        ),
-        const SizedBox(height: 20),
-        _AddActionCard(
-          icon: Icons.bed_outlined,
-          title: 'Add booking',
-          subtitle: 'Guest, stay dates and payment',
-          onTap: () => setState(() => _selectedForm = 'booking'),
-        ),
-        _AddActionCard(
-          icon: Icons.receipt_long_outlined,
-          title: 'Add expense',
-          subtitle: 'Record a business expense',
-          onTap: () => setState(() => _selectedForm = 'expense'),
-        ),
-        _AddActionCard(
-          icon: Icons.list_alt_outlined,
-          title: 'Show expenses',
-          subtitle: 'All expenses of the current month',
-          onTap: () => setState(() => _selectedForm = 'showExpenses'),
-        ),
-      ],
+    return DefaultTabController(
+      length: 2,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          const TabBar(
+            tabs: [
+              Tab(
+                text: 'Manage',
+                icon: Icon(Icons.dashboard_customize_outlined),
+              ),
+              Tab(text: 'House rules', icon: Icon(Icons.rule_outlined)),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
+              children: [
+                ListView(
+                  padding: const EdgeInsets.all(20),
+                  children: [
+                    Text(
+                      'Manage records',
+                      style: Theme.of(context).textTheme.headlineSmall
+                          ?.copyWith(fontWeight: FontWeight.w700),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Choose what you want to add or view.',
+                      style: TextStyle(color: Color(0xFF64748B)),
+                    ),
+                    const SizedBox(height: 20),
+                    _AddActionCard(
+                      icon: Icons.bed_outlined,
+                      title: 'Add booking',
+                      subtitle: 'Guest, stay dates and payment',
+                      onTap: () => setState(() => _selectedForm = 'booking'),
+                    ),
+                    _AddActionCard(
+                      icon: Icons.receipt_long_outlined,
+                      title: 'Add expense',
+                      subtitle: 'Record a business expense',
+                      onTap: () => setState(() => _selectedForm = 'expense'),
+                    ),
+                    _AddActionCard(
+                      icon: Icons.list_alt_outlined,
+                      title: 'Show expenses',
+                      subtitle: 'All expenses of the current month',
+                      onTap: () =>
+                          setState(() => _selectedForm = 'showExpenses'),
+                    ),
+                  ],
+                ),
+                _HouseRulesEditor(controller: widget.controller),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HouseRulesEditor extends StatefulWidget {
+  const _HouseRulesEditor({required this.controller});
+
+  final RegistryViewModel controller;
+
+  @override
+  State<_HouseRulesEditor> createState() => _HouseRulesEditorState();
+}
+
+class _HouseRulesEditorState extends State<_HouseRulesEditor> {
+  late final TextEditingController _rules;
+  bool _saving = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _rules = TextEditingController(text: widget.controller.houseRules);
+  }
+
+  @override
+  void didUpdateWidget(covariant _HouseRulesEditor oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!_saving && _rules.text.isEmpty) {
+      _rules.text = widget.controller.houseRules;
+    }
+  }
+
+  @override
+  void dispose() {
+    _rules.dispose();
+    super.dispose();
+  }
+
+  Future<void> _save() async {
+    if (_rules.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('House rules cannot be empty')),
+      );
+      return;
+    }
+    setState(() => _saving = true);
+    try {
+      await widget.controller.saveHouseRules(_rules.text);
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('House rules saved')));
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Unable to save house rules: $e')));
+    } finally {
+      if (mounted) setState(() => _saving = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedBuilder(
+      animation: widget.controller,
+      builder: (context, _) {
+        return Container(
+          color: AppColors.appBackground,
+          child: ListView(
+            padding: const EdgeInsets.all(16),
+            children: [
+              Text(
+                'House rules',
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 6),
+              const Text(
+                'Edit the rules that guests receive with their booking.',
+                style: TextStyle(color: Color(0xFF64748B)),
+              ),
+              const SizedBox(height: 16),
+              Card(
+                child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: TextField(
+                    controller: _rules,
+                    key: const Key('houseRulesBody'),
+                    minLines: 14,
+                    maxLines: null,
+                    keyboardType: TextInputType.multiline,
+                    decoration: const InputDecoration(
+                      alignLabelWithHint: true,
+                      labelText: 'House rules',
+                      hintText: 'Enter one rule per line...',
+                      border: OutlineInputBorder(),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                width: double.infinity,
+                child: FilledButton.icon(
+                  key: const Key('saveHouseRules'),
+                  onPressed: _saving ? null : _save,
+                  icon: _saving
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.save_outlined),
+                  label: const Text('Save house rules'),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

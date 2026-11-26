@@ -21,20 +21,11 @@ class BookingsScreen extends StatefulWidget {
 }
 
 class _BookingsScreenState extends State<BookingsScreen> {
-  static const List<String> _houseRules = [
-    'Please carry a valid government ID during the stay.',
-    'Check-in time is from 1:00 PM onwards, and check-out time is before 11:00 AM.',
-    'Check-out extensions are subject to room availability.',
-    'Any damage to property will be chargeable to the guest.',
-    'Loud music and disturbance are not allowed after 11:00 PM.',
-    'Outstanding balance must be cleared before check-in.',
-    'Please maintain cleanliness and hygiene in the rooms and living area.',
-    'Pets are allowed in the guest house premises only upon prior notice.',
-    'Smoking is strictly prohibited inside the rooms and common areas.',
-    'Guests are responsible for their personal belongings; the guest house is not liable for any loss.',
-    'Swimming pool disipline: Children must be supervised by an adult at all times. No diving or running around the pool area.',
-    'Penality for vomiting in the rooms will be 1000.',
-  ];
+  static List<String> _ruleLines(String rules) => rules
+      .split(RegExp(r'\r?\n'))
+      .map((line) => line.trim())
+      .where((line) => line.isNotEmpty)
+      .toList();
 
   final _formKey = GlobalKey<FormState>();
 
@@ -172,6 +163,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
     required String guestHouseName,
     required String guestHouseAddress,
     required Uint8List? guestHousePhotoBytes,
+    required String houseRules,
   }) async {
     final pdf = pw.Document();
     final photoBytes = guestHousePhotoBytes;
@@ -454,7 +446,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
             pw.Container(height: 1.5, color: PdfColors.grey300),
             pw.SizedBox(height: 10),
 
-            ..._houseRules.map(
+            ..._ruleLines(houseRules).map(
               (rule) => pw.Padding(
                 padding: const pw.EdgeInsets.only(bottom: 8),
                 child: pw.Row(
@@ -536,6 +528,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
         guestHouseName: widget.guestHouseName,
         guestHouseAddress: widget.guestHouseAddress,
         guestHousePhotoBytes: widget.guestHousePhotoBytes,
+        houseRules: widget.controller.houseRules,
       );
       final safeName = booking.name
           .trim()
@@ -648,7 +641,7 @@ class _BookingsScreenState extends State<BookingsScreen> {
                       ),
                     ),
                     const SizedBox(height: 8),
-                    ..._houseRules.map(
+                    ..._ruleLines(widget.controller.houseRules).map(
                       (rule) => Padding(
                         padding: const EdgeInsets.only(bottom: 6),
                         child: Row(

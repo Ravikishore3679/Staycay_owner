@@ -25,6 +25,13 @@ class FirestoreRegistryRepository implements RegistryRepository {
   CollectionReference<Map<String, dynamic>> _expensesCollection(String uid) =>
       _firestore.collection('users').doc(uid).collection('expenses');
 
+  DocumentReference<Map<String, dynamic>> _houseRulesDocument(String uid) =>
+      _firestore
+          .collection('users')
+          .doc(uid)
+          .collection('settings')
+          .doc('houseRules');
+
   @override
   Stream<List<Booking>> watchBookings() {
     final uid = _currentUid();
@@ -159,5 +166,24 @@ class FirestoreRegistryRepository implements RegistryRepository {
   Future<void> deleteExpense(String expenseId) async {
     final uid = _currentUid();
     await _expensesCollection(uid).doc(expenseId).delete();
+  }
+
+  @override
+  Stream<String> watchHouseRules() {
+    final uid = _currentUid();
+    return _houseRulesDocument(uid).snapshots().map((snapshot) {
+      final data = snapshot.data();
+      final rules = data?['body'];
+      return rules is String ? rules : '';
+    });
+  }
+
+  @override
+  Future<void> saveHouseRules(String houseRules) async {
+    final uid = _currentUid();
+    await _houseRulesDocument(uid).set({
+      'body': houseRules,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
   }
 }

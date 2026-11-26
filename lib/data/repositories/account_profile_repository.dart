@@ -45,12 +45,16 @@ class FirestoreAccountProfileRepository implements AccountProfileRepository {
         if (data == null) return null;
         final photo = data['photoBytes'];
         return AccountProfile(
-          name: data['name'] as String,
-          phone: data['phone'] as String,
-          email: data['email'] as String,
-          guestHouseName: data['guestHouseName'] as String? ?? '',
-          guestHouseAddress: data['guestHouseAddress'] as String?,
-          photoBytes: photo == null ? null : (photo as Blob).bytes,
+          name: data['name'] is String ? data['name'] as String : '',
+          phone: data['phone'] is String ? data['phone'] as String : '',
+          email: data['email'] is String ? data['email'] as String : '',
+          guestHouseName: data['guestHouseName'] is String
+              ? data['guestHouseName'] as String
+              : '',
+          guestHouseAddress: data['guestHouseAddress'] is String
+              ? data['guestHouseAddress'] as String
+              : null,
+          photoBytes: photo is Blob ? photo.bytes : null,
         );
       });
 

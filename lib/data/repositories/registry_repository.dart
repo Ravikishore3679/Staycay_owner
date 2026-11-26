@@ -11,4 +11,6 @@ abstract class RegistryRepository {
   Future<Booking> refundBooking(String bookingId);
   Future<void> addExpense(Expense expense);
   Future<void> deleteExpense(String expenseId);
+  Stream<String> watchHouseRules();
+  Future<void> saveHouseRules(String houseRules);
 }
